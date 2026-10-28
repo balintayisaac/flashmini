@@ -30,3 +30,29 @@ Issues = "https://github.com/balintayisaac/flashmini/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/flashmini"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+    "pyright>=1.1.390",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "W"]
+# E501 handled by formatter where reasonable; keep strict defaults otherwise.
+
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
