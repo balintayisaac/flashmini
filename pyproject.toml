@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flashmini"
+version = "0.0.1"
+description = "Local-first terminal AI coding assistant for 8 GB-class hardware"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Isaac Balintay" }]
+keywords = ["llm", "llama-cpp", "coding-assistant", "local-first", "cli"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+]
+# Dependencies are added per-phase as components land; none are declared
+# until the code that needs them exists.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/balintayisaac/flashmini"
+Issues = "https://github.com/balintayisaac/flashmini/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flashmini"]
