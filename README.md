@@ -1,6 +1,12 @@
 # FlashMini
 
+<p align="center">
+  <img src="assets/logo.png" alt="FlashMini logo" width="140">
+</p>
+
 A terminal-first AI coding assistant for Linux that runs entirely on your machine: no cloud APIs, no account required, no telemetry. Built for the hardware most AI tooling ignores — 8 GB of RAM, four CPU cores, integrated graphics.
+
+> **Discipline beats scale.** Wrap a small model in verification, retrieval, and memory rigorous enough, and it stops mattering that the cloud assistant has a hundred times the parameters. See [docs/VISION.md](docs/VISION.md).
 
 **Status: active development.** The architecture is designed and documented in [docs/DESIGN.md](docs/DESIGN.md); implementation is underway. Capabilities described below are design targets, not shipped features. Nothing here should be treated as working until a release notes it as verified.
 
