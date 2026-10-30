@@ -22,7 +22,9 @@ classifiers = [
 ]
 # Dependencies are added per-phase as components land; none are declared
 # until the code that needs them exists.
-dependencies = []
+dependencies = [
+    "pydantic>=2.14.2",
+]
 
 [project.urls]
 Homepage = "https://github.com/balintayisaac/flashmini"
