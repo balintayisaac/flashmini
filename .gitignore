@@ -27,6 +27,9 @@ htmlcov/
 *.sqlite3-wal
 *.sqlite3-shm
 
+# Vendored binaries (fetch via scripts/fetch_bins.sh)
+vendor/
+
 # Editors / OS
 .vscode/
 .idea/
