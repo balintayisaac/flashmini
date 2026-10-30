@@ -1,17 +1,20 @@
-.PHONY: install lint typecheck test check clean
+.PHONY: install lint typecheck test smoke check clean
 
 install:      ## Create venv and install all dependencies
 	uv sync
 
 lint:         ## Ruff lint + format check
-	uv run ruff check src tests
-	uv run ruff format --check src tests
+	uv run ruff check src tests scripts
+	uv run ruff format --check src tests scripts
 
 typecheck:    ## Pyright static type check
-	uv run pyright src
+	uv run pyright src scripts
 
 test:         ## Run the test suite
 	uv run pytest
+
+smoke:        ## Dogfood all tools against this repo (tool-layer smoke test)
+	uv run python scripts/smoke.py
 
 check: lint typecheck test  ## Everything CI runs, locally
 

@@ -43,14 +43,14 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["src", "tests"]
+src = ["src", "tests", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "W"]
 # E501 handled by formatter where reasonable; keep strict defaults otherwise.
 
 [tool.pyright]
-include = ["src"]
+include = ["src", "scripts"]
 pythonVersion = "3.11"
 typeCheckingMode = "standard"
 
