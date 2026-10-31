@@ -12,7 +12,7 @@ The deterministic tool layer, the local-model runtime, and the agent loop that d
 | 1.1 | Environment foundation (uv, pytest, ruff, pyright, CI) | Done — CI green |
 | 1.2 | Tool layer: 8 tools, normalized envelope, workspace jail, atomic patching | Done — 64 tests, smoke 10/10 |
 | 1.3 | Model benchmark (Qwen3.5-4B vs Nanbeige4.2-3B vs Nemotron-Bolt) | **Done — winner: Qwen3.5-4B MTP, 4.2 tok/s, all gates pass** (`docs/decisions.md`) |
-| 2 | Agent loop + CLI | In progress — runtime + agent loop landed; AgentBench v0 rounds: 7/8 → **8/8 after fixes**; live smoke passes |
+| 2 | Agent loop + CLI | In progress — runtime + agent loop + CLI landed; AgentBench v0 rounds: 7/8 → **8/8 → 8/8**; live smoke passes |
 
 The agent loop now exists and drives the tool layer end-to-end: the model
 must answer with exactly one JSON object per turn (a tool call or a final
@@ -64,10 +64,10 @@ CPU-only).
 Phase 2 continues: benchmark and harden. AgentBench v0 (8 deterministic
 tasks — read, search, patch, fix-test) scores the live agent end-to-end on
 the winning model (Qwen3.5-4B MTP under `llama-server` with prompt caching
-and `--spec-type draft-mtp --spec-draft-n-max 2`). Round 1 scored 7/8; the
-one failure was diagnosed to root cause, fixed in three places, and round 2
-scored **8/8** — every weakness found gets fixed and re-measured. Next: the
-first user-facing workflow lands as a CLI command — fix a failing test.
+and `--spec-type draft-mtp --spec-draft-n-max 2`). Rounds: 7/8 → 8/8 → 8/8
+— every weakness found gets fixed and re-measured, and the score repeats.
+The CLI now ships the first workflows: `flashmini run "<task>"` and
+`flashmini fix` (fix a failing test), with live step output.
 
 The engineering plan for how a 4B local agent competes with models 100x
 larger is in [`frontier-plan.md`](frontier-plan.md).

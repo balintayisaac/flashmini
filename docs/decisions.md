@@ -118,7 +118,7 @@ bandwidth savings at this model size. Default stays **f16**. q8_0 remains the
 memory lever of record if context grows (16K+), where KV bytes become
 material; revisit with a live-server measurement then, with speculation on.
 
-## AgentBench v0 rounds 1–2 — 7/8 → 8/8 (2026-10-31)
+## AgentBench v0 rounds 1–3 — 7/8 → 8/8 → 8/8 (2026-10-31)
 
 Harness: `scripts/bench/agentbench.py` — 8 deterministic tasks (read and
 report, symbol search, text search, fix-a-failing-test, patch-update, plus
@@ -131,6 +131,7 @@ model in disposable workspaces; results JSONs are committed under
 | 1 | 7/8 (88%) | `patch-update` failed: the model emitted unified-diff syntax seven times against the `*** Begin Patch` parser (164 s, hit the step cap; file untouched — atomicity held) |
 | diagnostic | 0/1 | `--only patch-update --verbose` captured every raw reply and error (tooling added this round: `--only`, `--verbose`, per-step records in the results JSON) |
 | 2 | **8/8 (100%)** | after the fixes below; `patch-update` passed in 59 s via `read_file` → `apply_patch` → `git_ops` |
+| 3 | **8/8 (100%)** | repeatability run, same configuration: all eight pass again, same tool sequences, `patch-update` in 62.6 s |
 
 Fixes between rounds — each one a product gap the score exposed:
 
@@ -145,5 +146,7 @@ Fixes between rounds — each one a product gap the score exposed:
 
 Round 2 per-task wall time: 16–97 s (fastest: the symbol/grep protocol
 checks; slowest: `fix-test` at 96.8 s with two pytest runs and a patch).
+Round 3 repeated the suite on the same configuration — 8/8 again, same tool
+sequences, 18–108 s per task: the fixes hold and the score repeats.
 The frontier/other-model comparison column in this table is produced via
 `--base-url` against an OpenAI-compatible endpoint (dev-side; pending key).
