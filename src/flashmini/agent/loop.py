@@ -8,6 +8,7 @@ envelopes; the loop never lets a crash escape and never retries forever.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -99,7 +100,7 @@ class AgentLoop:
         self.max_steps = max_steps
         self.max_tokens = max_tokens
 
-    def run(self, task: str) -> AgentRun:
+    def run(self, task: str, on_step: Callable[[Step], None] | None = None) -> AgentRun:
         names = self.registry.names()
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": build_system_prompt(names)},
@@ -118,14 +119,18 @@ class AgentLoop:
             data = parse_step(raw)
 
             if data is None:
-                run.steps.append(Step(index=index, kind="protocol", raw=raw))
+                step = Step(index=index, kind="protocol", raw=raw)
+                run.steps.append(step)
+                self._notify(on_step, step)
                 messages.append({"role": "assistant", "content": raw})
                 messages.append({"role": "user", "content": PROTOCOL_REMINDER})
                 continue
 
             final = data.get("final")
             if isinstance(final, str) and final.strip():
-                run.steps.append(Step(index=index, kind="final", raw=raw))
+                step = Step(index=index, kind="final", raw=raw)
+                run.steps.append(step)
+                self._notify(on_step, step)
                 run.final = final
                 run.finished = True
                 return run
@@ -133,15 +138,17 @@ class AgentLoop:
             tool = data.get("tool")
             args = data.get("args") or {}
             if not isinstance(tool, str) or not isinstance(args, dict):
-                run.steps.append(Step(index=index, kind="protocol", raw=raw))
+                step = Step(index=index, kind="protocol", raw=raw)
+                run.steps.append(step)
+                self._notify(on_step, step)
                 messages.append({"role": "assistant", "content": raw})
                 messages.append({"role": "user", "content": PROTOCOL_REMINDER})
                 continue
 
             result = self.registry.call(tool, **args)
-            run.steps.append(
-                Step(index=index, kind="tool", tool=tool, args=args, result=result, raw=raw)
-            )
+            step = Step(index=index, kind="tool", tool=tool, args=args, result=result, raw=raw)
+            run.steps.append(step)
+            self._notify(on_step, step)
             messages.append({"role": "assistant", "content": raw})
             signature = tool + ":" + json.dumps(args, sort_keys=True)
             if result.status is not ToolStatus.OK and signature == last_fail_sig:
@@ -158,6 +165,11 @@ class AgentLoop:
             messages.append({"role": "user", "content": message})
 
         return run  # step budget exhausted without a final answer
+
+    @staticmethod
+    def _notify(on_step: Callable[[Step], None] | None, step: Step) -> None:
+        if on_step is not None:
+            on_step(step)
 
 
 def run_task(
