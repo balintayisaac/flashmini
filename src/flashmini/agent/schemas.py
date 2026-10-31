@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from flashmini.tools.patch import PATCH_FORMAT_TEMPLATE
+
 TOOL_DESCRIPTIONS: dict[str, str] = {
     "read_file": "read_file(path, start_line?, end_line?) — read a file with line numbers",
     "write_file": (
@@ -51,11 +53,20 @@ def build_system_prompt(tool_names: list[str]) -> str:
     ]
     for name in tool_names:
         lines.append(f"- {TOOL_DESCRIPTIONS.get(name, name)}")
+    if "apply_patch" in tool_names:
+        lines += [
+            "",
+            "Patch format for apply_patch (exactly this shape — no '--- a/' or",
+            "'+++ b/' unified-diff headers):",
+            PATCH_FORMAT_TEMPLATE,
+            "Copy context lines verbatim from the file you read.",
+        ]
     lines += [
         "",
         "Rules:",
         "- Look before you change: read a file before patching it.",
         "- Never claim something works unless a tool result confirms it.",
+        "- If a tool call fails, do not repeat it unchanged: fix the root cause first.",
         "- After each tool result, continue with the next tool call or the final answer.",
     ]
     return "\n".join(lines)

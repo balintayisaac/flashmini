@@ -13,7 +13,7 @@ from typing import Any
 
 from flashmini.agent.schemas import build_system_prompt, tool_call_schema
 from flashmini.runtime.server import ChatClient
-from flashmini.tools import ToolRegistry, ToolResult
+from flashmini.tools import ToolRegistry, ToolResult, ToolStatus
 
 MAX_STEPS_DEFAULT = 8
 MAX_TOKENS_DEFAULT = 700
@@ -106,6 +106,8 @@ class AgentLoop:
             {"role": "user", "content": task},
         ]
         run = AgentRun(task=task, final=None, finished=False, steps=[])
+        last_fail_sig: str | None = None
+        repeat_count = 0
 
         for index in range(self.max_steps):
             raw = self.client.chat_text(
@@ -141,9 +143,19 @@ class AgentLoop:
                 Step(index=index, kind="tool", tool=tool, args=args, result=result, raw=raw)
             )
             messages.append({"role": "assistant", "content": raw})
-            messages.append(
-                {"role": "user", "content": "Tool result:\n" + envelope_message(result)}
-            )
+            signature = tool + ":" + json.dumps(args, sort_keys=True)
+            if result.status is not ToolStatus.OK and signature == last_fail_sig:
+                repeat_count += 1
+            else:
+                repeat_count = 0
+            last_fail_sig = signature if result.status is not ToolStatus.OK else None
+            message = "Tool result:\n" + envelope_message(result)
+            if repeat_count >= 1:
+                message = (
+                    f"WARNING: identical call already failed {repeat_count} time(s). "
+                    "Do not repeat it; change the arguments or the approach.\n" + message
+                )
+            messages.append({"role": "user", "content": message})
 
         return run  # step budget exhausted without a final answer
 

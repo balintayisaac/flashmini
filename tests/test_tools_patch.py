@@ -57,6 +57,32 @@ def test_delete_file_with_backup(ctx: ToolContext) -> None:
     assert backups and backups[-1].read_text() == "bye\n"
 
 
+def test_unified_diff_input_teaches_format(ctx: ToolContext) -> None:
+    write_file(ctx, "config.py", "MODE = 'dev'\n")
+    unified = (
+        "*** Begin Patch\n"
+        "--- a/config.py\n"
+        "+++ b/config.py\n"
+        "@@ -1 +1 @@\n"
+        "-MODE = 'dev'\n"
+        "+MODE = 'prod'\n"
+        "*** End Patch\n"
+    )
+    result = apply_patch(ctx, unified)
+    assert result.status is ToolStatus.ERROR
+    assert "unified diff" in result.output
+    assert "Expected format:" in result.output
+    assert "*** Update File:" in result.output
+    assert (ctx.workspace / "config.py").read_text() == "MODE = 'dev'\n"
+
+
+def test_error_output_always_includes_format(ctx: ToolContext) -> None:
+    result = apply_patch(ctx, "MODE = 'prod'")
+    assert result.status is ToolStatus.ERROR
+    assert "Expected format:" in result.output
+    assert "*** Begin Patch" in result.output
+
+
 def test_mismatch_leaves_file_untouched(ctx: ToolContext) -> None:
     write_file(ctx, "a.txt", "keep\n")
     patch = make_patch("*** Update File: a.txt", "-missing", "+changed")

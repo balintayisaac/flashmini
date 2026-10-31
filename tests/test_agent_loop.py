@@ -60,6 +60,7 @@ class TestSchemas:
         for name in names:
             assert f"- {name}(" in prompt
         assert '"final"' in prompt
+        assert "Patch format for apply_patch" in prompt
 
 
 class TestAgentLoop:
@@ -110,6 +111,14 @@ class TestAgentLoop:
         first = run.steps[0]
         assert first.result is not None
         assert first.result.status == ToolStatus.ERROR
+
+    def test_repeated_failing_call_gets_warning(self, tmp_path: Path) -> None:
+        call = '{"tool": "read_file", "args": {"path": "missing.txt"}}'
+        client = FakeClient([call, call, '{"final": "gave up"}'])
+        run = AgentLoop(_registry(tmp_path), client).run("retry test")
+        assert run.finished is True
+        third_request = client.requests[2][-1]["content"]
+        assert "WARNING: identical call already failed" in third_request
 
     def test_protocol_violation_gets_reminder_then_recovers(self, tmp_path: Path) -> None:
         client = FakeClient(["just some prose", '{"final": "ok"}'])

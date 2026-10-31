@@ -1,0 +1,110 @@
+{
+  "stamp": "20261031-134837",
+  "endpoint": "local llama-server",
+  "model_note": "Qwen3.5-4B MTP UD-Q4_K_XL; --spec-type draft-mtp --spec-draft-n-max 2",
+  "passed": 7,
+  "total": 8,
+  "pass_rate": 0.875,
+  "results": [
+    {
+      "name": "qa-read",
+      "passed": true,
+      "detail": "final='The deploy code mentioned in NOTES.md is ORANGE-42.'",
+      "tool_calls": 1,
+      "tools_used": [
+        "read_file"
+      ],
+      "wall_s": 32.0,
+      "final": "The deploy code mentioned in NOTES.md is ORANGE-42."
+    },
+    {
+      "name": "find-symbol",
+      "passed": true,
+      "detail": "used_symbol_search=True final='lib/ops.py'",
+      "tool_calls": 1,
+      "tools_used": [
+        "symbol_search"
+      ],
+      "wall_s": 16.3,
+      "final": "lib/ops.py"
+    },
+    {
+      "name": "find-text",
+      "passed": true,
+      "detail": "used_grep=True final='b.py'",
+      "tool_calls": 2,
+      "tools_used": [
+        "grep",
+        "grep"
+      ],
+      "wall_s": 29.8,
+      "final": "b.py"
+    },
+    {
+      "name": "fix-test",
+      "passed": true,
+      "detail": "pytest rc=0 (1 passed in 0.00s); agent tools=['run_tests', 'write_file']",
+      "tool_calls": 4,
+      "tools_used": [
+        "run_tests",
+        "read_file",
+        "write_file",
+        "run_tests"
+      ],
+      "wall_s": 88.2,
+      "final": "I fixed the bug in app/mathx.py. The add() function was incorrectly returning a - b (subtraction) instead of a + b (addition). I changed line 2 from 'return a - b' to 'return a + b'."
+    },
+    {
+      "name": "patch-update",
+      "passed": false,
+      "detail": "file=\"MODE = 'dev'\\nLEVEL = 1\\nDEBUG = True\\n\"",
+      "tool_calls": 8,
+      "tools_used": [
+        "read_file",
+        "apply_patch",
+        "apply_patch",
+        "apply_patch",
+        "apply_patch",
+        "apply_patch",
+        "apply_patch",
+        "apply_patch"
+      ],
+      "wall_s": 164.1,
+      "final": null
+    },
+    {
+      "name": "proto-read",
+      "passed": true,
+      "detail": "tools=['read_file']",
+      "tool_calls": 1,
+      "tools_used": [
+        "read_file"
+      ],
+      "wall_s": 18.5,
+      "final": "# Demo\nHello."
+    },
+    {
+      "name": "proto-grep",
+      "passed": true,
+      "detail": "tools=['grep', 'grep']",
+      "tool_calls": 2,
+      "tools_used": [
+        "grep",
+        "grep"
+      ],
+      "wall_s": 33.5,
+      "final": "The word 'banana' (specifically 'bananas') was found in data/notes.txt at line 1."
+    },
+    {
+      "name": "proto-test",
+      "passed": true,
+      "detail": "tools=['run_tests']",
+      "tool_calls": 1,
+      "tools_used": [
+        "run_tests"
+      ],
+      "wall_s": 16.6,
+      "final": "All tests passed successfully."
+    }
+  ]
+}

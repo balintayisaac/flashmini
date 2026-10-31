@@ -19,7 +19,7 @@ import sys
 import tempfile
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from flashmini.agent import AgentLoop, AgentRun
@@ -54,6 +54,24 @@ def used(run: AgentRun, tool: str, needle: str | None = None) -> bool:
 
 def tools_used(run: AgentRun) -> list[str]:
     return [step.tool for step in run.steps if step.kind == "tool"]
+
+
+def steps_summary(run: AgentRun) -> list[dict[str, object]]:
+    """Compact per-step record for the results JSON (keeps runs self-diagnosing)."""
+    out: list[dict[str, object]] = []
+    for step in run.steps:
+        entry: dict[str, object] = {"index": step.index, "kind": step.kind}
+        if step.kind == "tool":
+            entry["tool"] = step.tool
+            entry["args"] = step.args
+            if step.result is not None:
+                entry["status"] = step.result.status.value
+                entry["output"] = step.result.output[:600]
+                entry["hint"] = step.result.next_action_hint
+        else:
+            entry["raw"] = step.raw[:300]
+        out.append(entry)
+    return out
 
 
 def pytest_ok(ws: Path) -> tuple[bool, str]:
@@ -232,11 +250,15 @@ class TaskResult:
     tools_used: list[str]
     wall_s: float
     final: str | None
+    steps: list[dict[str, object]] = field(default_factory=list)
 
 
-def run_suite(client: ChatClient) -> list[TaskResult]:
+def run_suite(
+    client: ChatClient, only: list[str] | None = None, verbose: bool = False
+) -> list[TaskResult]:
+    tasks = [t for t in TASKS if not only or t.name in only]
     results: list[TaskResult] = []
-    for task in TASKS:
+    for task in tasks:
         with tempfile.TemporaryDirectory(
             prefix=f"agentbench-{task.name}-", dir="/tmp/opencode"
         ) as td:
@@ -262,10 +284,21 @@ def run_suite(client: ChatClient) -> list[TaskResult]:
                     tools_used=tools,
                     wall_s=round(wall, 1),
                     final=run.final if run else None,
+                    steps=steps_summary(run) if run else [],
                 )
             )
             mark = "PASS" if passed else "FAIL"
             print(f"{mark} {task.name:12s} {wall:6.1f}s tools={tools} :: {detail}")
+            if verbose and run:
+                for s in run.steps:
+                    if s.kind == "tool" and s.result is not None:
+                        args_s = json.dumps(s.args)[:160]
+                        print(f"    [{s.index}] {s.tool} args={args_s}")
+                        out_s = s.result.output[:220]
+                        hint_s = s.result.next_action_hint
+                        print(f"        -> {s.result.status.value}: {out_s!r} hint={hint_s!r}")
+                    else:
+                        print(f"    [{s.index}] {s.kind}: {s.raw[:160]!r}")
     return results
 
 
@@ -275,7 +308,10 @@ def main() -> int:
         "--base-url", help="OpenAI-compatible endpoint; default = local llama-server"
     )
     parser.add_argument("--model-note", default="", help="label for the model under test")
+    parser.add_argument("--only", default="", help="comma-separated task names to run")
+    parser.add_argument("--verbose", action="store_true", help="print every agent step")
     args = parser.parse_args()
+    only = [s.strip() for s in args.only.split(",") if s.strip()]
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -283,13 +319,13 @@ def main() -> int:
     if args.base_url:
         note = args.model_note or "remote endpoint"
         print(f"AgentBench v0 — endpoint: {args.base_url} ({note})")
-        results = run_suite(ChatClient(base_url=args.base_url))
+        results = run_suite(ChatClient(base_url=args.base_url), only, args.verbose)
         endpoint = args.base_url
     else:
         note = args.model_note or LOCAL_MODEL_NOTE
         print(f"AgentBench v0 — local winner model ({note})")
         with LlamaServer(workspace=REPO) as server:
-            results = run_suite(ChatClient(base_url=server.base_url))
+            results = run_suite(ChatClient(base_url=server.base_url), only, args.verbose)
         endpoint = "local llama-server"
 
     passed = sum(1 for r in results if r.passed)

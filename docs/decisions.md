@@ -101,3 +101,33 @@ Probed live against the vendored server with the winning config
 The runtime layer (`src/flashmini/runtime/`) therefore uses thinking-off by
 default, `json_schema` for tool calls, and `cache_prompt: true` on every
 request.
+
+## AgentBench v0 rounds 1–2 — 7/8 → 8/8 (2026-10-31)
+
+Harness: `scripts/bench/agentbench.py` — 8 deterministic tasks (read and
+report, symbol search, text search, fix-a-failing-test, patch-update, plus
+three tool-usage protocol checks). Runs the live agent loop on the winning
+model in disposable workspaces; results JSONs are committed under
+`bench/results/`.
+
+| round | score | notes |
+|---|---|---|
+| 1 | 7/8 (88%) | `patch-update` failed: the model emitted unified-diff syntax seven times against the `*** Begin Patch` parser (164 s, hit the step cap; file untouched — atomicity held) |
+| diagnostic | 0/1 | `--only patch-update --verbose` captured every raw reply and error (tooling added this round: `--only`, `--verbose`, per-step records in the results JSON) |
+| 2 | **8/8 (100%)** | after the fixes below; `patch-update` passed in 59 s via `read_file` → `apply_patch` → `git_ops` |
+
+Fixes between rounds — each one a product gap the score exposed:
+
+1. `apply_patch` errors now teach the expected format: the error output
+   always carries the template, and unified-diff input gets a specific
+   "no `--- a/` / `+++ b/` header lines" explanation.
+2. The system prompt shows the patch template up front and adds the rule
+   "if a tool call fails, do not repeat it unchanged".
+3. The loop warns the model when an identical call has already failed
+   ("change the arguments or the approach") instead of letting it retry
+   blindly.
+
+Round 2 per-task wall time: 16–97 s (fastest: the symbol/grep protocol
+checks; slowest: `fix-test` at 96.8 s with two pytest runs and a patch).
+The frontier/other-model comparison column in this table is produced via
+`--base-url` against an OpenAI-compatible endpoint (dev-side; pending key).

@@ -68,6 +68,10 @@ _UPDATE = "*** Update File: "
 _DELETE = "*** Delete File: "
 _MOVE = "*** Move to: "
 
+PATCH_FORMAT_TEMPLATE = (
+    "*** Begin Patch\n*** Update File: example.py\n@@\n-old line\n+new line\n*** End Patch"
+)
+
 
 def parse_patch(text: str) -> list[FileOp]:
     """Parse the Codex patch format into a list of file operations."""
@@ -247,11 +251,20 @@ def apply_patch(ctx: ToolContext, patch: str) -> ToolResult:
             else:
                 atomic_write(item.target, item.content)
     except PatchError as exc:
+        message = str(exc)
+        if ("+++ " in patch or "--- " in patch) and "@@" in patch:
+            message += (
+                "\n\nThis looks like a unified diff. This tool uses the *** Begin Patch "
+                "format instead: no '--- a/' or '+++ b/' header lines."
+            )
+        message += "\n\nExpected format:\n" + PATCH_FORMAT_TEMPLATE
         return ToolResult.error(
             tool,
-            str(exc),
+            message,
             duration_ms=elapsed_ms(started),
-            next_action_hint="fix the hunks and retry; no files were changed",
+            next_action_hint=(
+                "rewrite the patch in the shown format and retry; no files were changed"
+            ),
         )
     return ToolResult.ok(
         tool,

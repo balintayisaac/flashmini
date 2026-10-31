@@ -1,0 +1,308 @@
+{
+  "stamp": "20261031-144136",
+  "endpoint": "local llama-server",
+  "model_note": "Qwen3.5-4B MTP UD-Q4_K_XL; --spec-type draft-mtp --spec-draft-n-max 2",
+  "passed": 8,
+  "total": 8,
+  "pass_rate": 1.0,
+  "results": [
+    {
+      "name": "qa-read",
+      "passed": true,
+      "detail": "final='The deploy code mentioned in NOTES.md is ORANGE-42.'",
+      "tool_calls": 1,
+      "tools_used": [
+        "read_file"
+      ],
+      "wall_s": 40.2,
+      "final": "The deploy code mentioned in NOTES.md is ORANGE-42.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "NOTES.md"
+          },
+          "status": "ok",
+          "output": "     1\t# Notes\n     2\t\n     3\tThe deploy code for this project is ORANGE-42.",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "final",
+          "raw": "{\"final\": \"The deploy code mentioned in NOTES.md is ORANGE-42.\"}"
+        }
+      ]
+    },
+    {
+      "name": "find-symbol",
+      "passed": true,
+      "detail": "used_symbol_search=True final='lib/ops.py'",
+      "tool_calls": 1,
+      "tools_used": [
+        "symbol_search"
+      ],
+      "wall_s": 16.2,
+      "final": "lib/ops.py",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "symbol_search",
+          "args": {
+            "query": "compute_cost"
+          },
+          "status": "ok",
+          "output": "lib/ops.py:1: function compute_cost",
+          "hint": "python-AST engine; tree-sitter symbol index arrives in Phase 3"
+        },
+        {
+          "index": 1,
+          "kind": "final",
+          "raw": "{\"final\": \"lib/ops.py\"}"
+        }
+      ]
+    },
+    {
+      "name": "find-text",
+      "passed": true,
+      "detail": "used_grep=True final='b.py'",
+      "tool_calls": 1,
+      "tools_used": [
+        "grep"
+      ],
+      "wall_s": 17.5,
+      "final": "b.py",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "ZEBRA-19"
+          },
+          "status": "ok",
+          "output": "b.py:1:token = 'ZEBRA-19'",
+          "hint": "python fallback scan (slower); install ripgrep for full speed"
+        },
+        {
+          "index": 1,
+          "kind": "final",
+          "raw": "{\"final\": \"b.py\"}"
+        }
+      ]
+    },
+    {
+      "name": "fix-test",
+      "passed": true,
+      "detail": "pytest rc=0 (1 passed in 0.00s); agent tools=['run_tests', 'apply_patch']",
+      "tool_calls": 4,
+      "tools_used": [
+        "run_tests",
+        "read_file",
+        "apply_patch",
+        "run_tests"
+      ],
+      "wall_s": 96.8,
+      "final": "I fixed the bug in app/mathx.py. The add() function was incorrectly returning a - b instead of a + b. I changed line 2 from 'return a - b' to 'return a + b', which made the tests pass.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {},
+          "status": "error",
+          "output": "F                                                                        [100%]\n=================================== FAILURES ===================================\n___________________________________ test_add ___________________________________\n\n    def test_add():\n>       assert add(2, 3) == 5\nE       assert -1 == 5\nE        +  where -1 = add(2, 3)\n\ntests/test_mathx.py:5: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_mathx.py::test_add - assert -1 == 5\n1 failed in 0.02s\n",
+          "hint": "0 passed, 1 failed; inspect the first failure and fix it"
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "app/mathx.py"
+          },
+          "status": "ok",
+          "output": "     1\tdef add(a, b):\n     2\t    return a - b",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "apply_patch",
+          "args": {
+            "patch": "*** Begin Patch\n*** Update File: app/mathx.py\n@@ -1,2 +1,2 @@\n def add(a, b):\n-    return a - b\n+    return a + b\n*** End Patch"
+          },
+          "status": "ok",
+          "output": "M app/mathx.py (+1/-1)",
+          "hint": "review the changes with git diff before committing"
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {},
+          "status": "ok",
+          "output": ".                                                                        [100%]\n1 passed in 0.01s\n",
+          "hint": "1 passed, 0 failed"
+        },
+        {
+          "index": 4,
+          "kind": "final",
+          "raw": "{\"final\": \"I fixed the bug in app/mathx.py. The add() function was incorrectly returning a - b instead of a + b. I changed line 2 from 'return a - b' to 'return a + b', which made the tests pass.\"}"
+        }
+      ]
+    },
+    {
+      "name": "patch-update",
+      "passed": true,
+      "detail": "file=\"MODE = 'prod'\\nLEVEL = 1\\nDEBUG = True\\n\"",
+      "tool_calls": 3,
+      "tools_used": [
+        "read_file",
+        "apply_patch",
+        "git_ops"
+      ],
+      "wall_s": 58.9,
+      "final": "MODE changed from 'dev' to 'prod' in config.py",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "config.py"
+          },
+          "status": "ok",
+          "output": "     1\tMODE = 'dev'\n     2\tLEVEL = 1\n     3\tDEBUG = True",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "apply_patch",
+          "args": {
+            "patch": "*** Begin Patch\n*** Update File: config.py\n@@\n-MODE = 'dev'\n+MODE = 'prod'\n*** End Patch"
+          },
+          "status": "ok",
+          "output": "M config.py (+1/-1)",
+          "hint": "review the changes with git diff before committing"
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "git_ops",
+          "args": {
+            "op": "diff"
+          },
+          "status": "error",
+          "output": "(no output)",
+          "hint": "command exited with code 129"
+        },
+        {
+          "index": 3,
+          "kind": "final",
+          "raw": "{\"final\": \"MODE changed from 'dev' to 'prod' in config.py\"}"
+        }
+      ]
+    },
+    {
+      "name": "proto-read",
+      "passed": true,
+      "detail": "tools=['read_file']",
+      "tool_calls": 1,
+      "tools_used": [
+        "read_file"
+      ],
+      "wall_s": 16.8,
+      "final": "# Demo\nHello.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "README.md"
+          },
+          "status": "ok",
+          "output": "     1\t# Demo\n     2\tHello.",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "final",
+          "raw": "{\"final\": \"# Demo\\nHello.\"}"
+        }
+      ]
+    },
+    {
+      "name": "proto-grep",
+      "passed": true,
+      "detail": "tools=['grep', 'read_file']",
+      "tool_calls": 2,
+      "tools_used": [
+        "grep",
+        "read_file"
+      ],
+      "wall_s": 30.3,
+      "final": "Found 'bananas' in data/notes.txt at line 1: 'bananas are yellow'",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "banana"
+          },
+          "status": "ok",
+          "output": "data/notes.txt:1:bananas are yellow",
+          "hint": "python fallback scan (slower); install ripgrep for full speed"
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "data/notes.txt"
+          },
+          "status": "ok",
+          "output": "     1\tbananas are yellow",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "final",
+          "raw": "{\"final\": \"Found 'bananas' in data/notes.txt at line 1: 'bananas are yellow'\"}"
+        }
+      ]
+    },
+    {
+      "name": "proto-test",
+      "passed": true,
+      "detail": "tools=['run_tests']",
+      "tool_calls": 1,
+      "tools_used": [
+        "run_tests"
+      ],
+      "wall_s": 16.2,
+      "final": "All tests passed (1 passed, 0 failed)",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {},
+          "status": "ok",
+          "output": ".                                                                        [100%]\n1 passed in 0.00s\n",
+          "hint": "1 passed, 0 failed"
+        },
+        {
+          "index": 1,
+          "kind": "final",
+          "raw": "{\"final\": \"All tests passed (1 passed, 0 failed)\"}"
+        }
+      ]
+    }
+  ]
+}
