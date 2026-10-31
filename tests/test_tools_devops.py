@@ -74,3 +74,13 @@ def test_lint_custom_command(ctx: ToolContext) -> None:
     result = lint(ctx, command)
     assert result.status is ToolStatus.OK
     assert "clean" in result.output
+
+
+def test_run_tests_default_degrades_without_project(ctx: ToolContext) -> None:
+    """A bare workspace (no pyproject) must still get a working pytest run."""
+    tests_dir = ctx.workspace / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test_ok.py").write_text("def test_ok():\n    assert True\n")
+    result = run_tests(ctx)
+    assert result.status is ToolStatus.OK
+    assert "1 passed" in (result.next_action_hint or "")

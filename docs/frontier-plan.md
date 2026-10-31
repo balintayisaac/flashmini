@@ -120,8 +120,9 @@ Planned levers, in impact order:
    At 12–17 t/s prompt processing, recomputing that prefix would dominate
    every iteration. `llama-server`'s slot cache keeps the shared prefix hot;
    iteration cost then scales with the delta, not the transcript.
-2. **KV cache quantization** (`-ctk` / `-ctv` q8_0, later q4_0): memory
-   headroom and, on CPU, often a generation speedup. Sub-4-bit KV
+2. **KV cache quantization** (`-ctk` / `-ctv`): measured on this machine —
+   it costs generation speed (q8_0 −15%, q4_0 −23% vs f16), so f16 stays the
+   default; kept as the memory lever of record if context grows. Sub-4-bit KV
    (TurboQuant-class) stays on the watchlist, not in production.
 3. Batching (`-b 512` / `-ub 512`), flash attention where applicable,
    draft-KV quantization (`-ctkd` / `-ctvd`), thread placement (`-t` / `-tb`).

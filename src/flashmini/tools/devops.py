@@ -128,14 +128,25 @@ def _run_project_command(
                 next_action_hint="pass a command string or omit it for the default",
             )
     else:
-        argv = default if shutil.which(default[0]) else fallback
+        argv = _default_argv(ctx, default, fallback)
     result = run_command(
         argv,
         cwd=ctx.workspace,
         timeout_s=timeout_s,
         max_output_bytes=ctx.max_output_bytes,
     )
-    output = result.stdout if result.stdout else "(no output)"
+    note = ""
+    if command is None and argv != fallback and _spawn_failed(result.stderr):
+        # The project-managed runner could not start (uv env without the tool
+        # installed); degrade to the fallback interpreter and say so.
+        result = run_command(
+            fallback,
+            cwd=ctx.workspace,
+            timeout_s=timeout_s,
+            max_output_bytes=ctx.max_output_bytes,
+        )
+        note = f"[flashmini] {argv[0]} could not spawn the command; retried with python -m.\n"
+    output = note + (result.stdout if result.stdout else "(no output)")
     hint = None
     if parse_summary:
         passed = sum(int(g) for g in re.findall(r"(\d+)\s+passed", result.stdout))
@@ -145,6 +156,20 @@ def _run_project_command(
             if failed:
                 hint += "; inspect the first failure and fix it"
     return _finish(tool, started, result.returncode, result.timed_out, output, result.stderr, hint)
+
+
+def _default_argv(ctx: ToolContext, default: list[str], fallback: list[str]) -> list[str]:
+    """Prefer the project-managed runner only where a project exists to manage."""
+    if shutil.which(default[0]) and (ctx.workspace / "pyproject.toml").exists():
+        return default
+    return fallback
+
+
+_SPAWN_FAILURE_MARKERS = ("Failed to spawn", "No pyproject.toml")
+
+
+def _spawn_failed(stderr: str) -> bool:
+    return any(marker in stderr for marker in _SPAWN_FAILURE_MARKERS)
 
 
 def _finish(

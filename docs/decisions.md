@@ -102,6 +102,22 @@ The runtime layer (`src/flashmini/runtime/`) therefore uses thinking-off by
 default, `json_schema` for tool calls, and `cache_prompt: true` on every
 request.
 
+## KV-cache quantization sweep — llama-bench b12001 (2026-10-31)
+
+Question: does quantizing the KV cache (a memory lever) also buy speed on this
+CPU? Measured on the winner file, `-t 4 -p 512 -n 128 -r 2`, no speculation:
+
+| KV config | pp512 (t/s) | tg128 (t/s) |
+|---|---|---|
+| f16 (default) | 16.71 ± 0.76 | **3.92 ± 0.14** |
+| q8_0 | 16.05 ± 0.09 | 3.32 ± 0.03 |
+| q4_0 | 15.11 ± 0.94 | 3.00 ± 0.40 |
+
+Verdict: quantization costs speed here — the dequant work is not repaid by
+bandwidth savings at this model size. Default stays **f16**. q8_0 remains the
+memory lever of record if context grows (16K+), where KV bytes become
+material; revisit with a live-server measurement then, with speculation on.
+
 ## AgentBench v0 rounds 1–2 — 7/8 → 8/8 (2026-10-31)
 
 Harness: `scripts/bench/agentbench.py` — 8 deterministic tasks (read and
