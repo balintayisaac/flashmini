@@ -37,3 +37,24 @@ speculative decoding as a possible later speed-up.
 
 Status: speed gate failed at 2.73 tok/s; comparison candidate Qwen3.5-4B
 (next entry) will be benchmarked on the same protocol before a verdict.
+
+## Candidate: Qwen3.5-4B UD-Q4_K_XL
+
+File: `unsloth/Qwen3.5-4B-GGUF`, `Qwen3.5-4B-UD-Q4_K_XL.gguf`, 2.71 GiB, 4.21 B
+params, hybrid Gated DeltaNet + Gated Attention (32 layers).
+
+| test | result | gate | verdict |
+|---|---|---|---|
+| pp512 (prompt processing) | 17.17 tok/s | — | slow, as expected on CPU |
+| tg128 (generation, `-t 4`) | 3.61 tok/s | ≥ 4 | **fail (close)** |
+| thread sweep (`-t 2/3/4`) | 3.66 / 3.61 / 3.57 tok/s | — | flat — memory-bandwidth bound |
+| peak RSS, `-c 4096` | 3.86 GiB | ≤ 5.5 GiB | pass |
+| coherence sample | correct Python function + docstring; thinking mode on by default | — | pass |
+| JSON tool-call compliance (GBNF) | emitted `{"tool": "read_file", "args": {"path": "pyproject.toml"}}` with the correct argument name | 100% | pass |
+
+Notes: baseline sits within ~10% of the speed gate. Next lever: the MTP
+variant (`unsloth/Qwen3.5-4B-MTP-GGUF`, same quants plus multi-token-prediction
+heads), run with `--spec-type draft-mtp --spec-draft-n-max 3`. Community
+numbers for Qwen MTP on other hardware: 1.5–1.7x speedup at 70–85% draft
+acceptance; highest gains on structured output such as code and tool calls,
+which is exactly FlashMini's workload.

@@ -11,7 +11,7 @@ The deterministic tool layer — the foundation the agent loop will drive.
 |-------|-----------|-------|
 | 1.1 | Environment foundation (uv, pytest, ruff, pyright, CI) | Done — CI green |
 | 1.2 | Tool layer: 8 tools, normalized envelope, workspace jail, atomic patching | Done — 64 tests, smoke 10/10 |
-| 1.3 | Model benchmark (Qwen3.5-4B vs Nanbeige4.2-3B vs Nemotron-Bolt) | Not started |
+| 1.3 | Model benchmark (Qwen3.5-4B vs Nanbeige4.2-3B vs Nemotron-Bolt) | In progress — Nanbeige failed speed gate; Qwen3.5-4B base measured; MTP variant under test |
 | 2 | Agent loop + CLI | Not started |
 
 The agent loop does not exist yet. Nothing here talks to a language model;
