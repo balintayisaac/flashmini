@@ -58,3 +58,28 @@ heads), run with `--spec-type draft-mtp --spec-draft-n-max 3`. Community
 numbers for Qwen MTP on other hardware: 1.5–1.7x speedup at 70–85% draft
 acceptance; highest gains on structured output such as code and tool calls,
 which is exactly FlashMini's workload.
+
+## Verdict: Qwen3.5-4B MTP UD-Q4_K_XL — winner (2026-10-31)
+
+File: `unsloth/Qwen3.5-4B-MTP-GGUF`, `Qwen3.5-4B-UD-Q4_K_XL.gguf`, 2.78 GiB
+(2,990,664,000 bytes) — the base weights plus multi-token-prediction heads
+(`mtp_shared_head_norm`, `mtp_h_input`, `mtp_tok_embd` tensors confirmed in
+the compute graph; 441 tensors). Engagement verified in verbose logs:
+`common_speculative_init_result: creating MTP draft context against the
+target model`.
+
+| spec configuration | generation | prompt | peak RSS | verdict |
+|---|---|---|---|---|
+| `--spec-type none` (control) | 3.3 t/s | 12.2 t/s | — | baseline |
+| `--spec-type draft-mtp --spec-draft-n-max 6` | 2.5 t/s | 10.8 t/s | 4.68 GiB | fails — over-drafting |
+| `--spec-type ngram-cache` | 2.8 t/s | 13.0 t/s | — | fails at this corpus size |
+| `--spec-type draft-mtp --spec-draft-n-max 3` | 3.7 t/s | 10.7 t/s | 4.53 GiB | small gain |
+| **`--spec-type draft-mtp --spec-draft-n-max 2`** | **4.2 t/s** | 12.1 t/s | ~4.5 GiB | **PASS — best** |
+
+All gates pass with the winning config: generation 4.2 tok/s (≥ 4), peak RSS
+~4.5 GiB at `-c 4096` (≤ 5.5), grammar-constrained tool-call compliance 100%
+(correct `path` argument), coherence good. Draft length matters more than
+expected on a 2-core CPU: n-max 2 beats 3 and 6 — deeper drafts are wasted
+work at moderate acceptance. ngram-cache needs a larger history to pay off.
+Nemotron-Bolt round skipped: weaker agent/tool benchmarks in its class and
+larger file; noted as re-checkable if a specific failure mode appears.

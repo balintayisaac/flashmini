@@ -11,7 +11,7 @@ The deterministic tool layer — the foundation the agent loop will drive.
 |-------|-----------|-------|
 | 1.1 | Environment foundation (uv, pytest, ruff, pyright, CI) | Done — CI green |
 | 1.2 | Tool layer: 8 tools, normalized envelope, workspace jail, atomic patching | Done — 64 tests, smoke 10/10 |
-| 1.3 | Model benchmark (Qwen3.5-4B vs Nanbeige4.2-3B vs Nemotron-Bolt) | In progress — Nanbeige failed speed gate; Qwen3.5-4B base measured; MTP variant under test |
+| 1.3 | Model benchmark (Qwen3.5-4B vs Nanbeige4.2-3B vs Nemotron-Bolt) | **Done — winner: Qwen3.5-4B MTP, 4.2 tok/s, all gates pass** (`docs/decisions.md`) |
 | 2 | Agent loop + CLI | Not started |
 
 The agent loop does not exist yet. Nothing here talks to a language model;
@@ -54,12 +54,17 @@ CPU-only).
 
 ## What's next
 
-Phase 1.3: pick the base model. Candidates benchmarked on this hardware —
-not on vendor charts — with three gates: generation ≥ 4 tok/s, peak RAM
-≤ 5.5 GB, 100% valid tool-call output under grammar constraints. Results
-go to `docs/decisions.md`. The winner becomes FlashMini's default.
+Phase 2: the agent loop. Wire the winning model (Qwen3.5-4B MTP, running
+under `llama-server` with prompt caching and `--spec-type draft-mtp
+--spec-draft-n-max 2`) to the tool layer through grammar-constrained tool
+calls, and build the first end-to-end workflow: fix a failing test.
+
+The engineering plan for how a 4B local agent competes with models 100x
+larger is in [`frontier-plan.md`](frontier-plan.md).
 
 ## Design documents
 
 - [`DESIGN.md`](DESIGN.md) — architecture.
 - [`VISION.md`](VISION.md) — why this project exists.
+- [`frontier-plan.md`](frontier-plan.md) — how a 4B local agent competes with 100x larger models.
+- [`decisions.md`](decisions.md) — dated decisions with measured evidence.
