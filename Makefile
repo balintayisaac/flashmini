@@ -1,4 +1,4 @@
-.PHONY: install lint typecheck test smoke check clean
+.PHONY: install lint typecheck test smoke smoke-agent check clean
 
 install:      ## Create venv and install all dependencies
 	uv sync
@@ -15,6 +15,9 @@ test:         ## Run the test suite
 
 smoke:        ## Dogfood all tools against this repo (tool-layer smoke test)
 	uv run python scripts/smoke.py
+
+smoke-agent:  ## Live end-to-end: the real model drives the agent loop (slow, minutes)
+	uv run python scripts/smoke_agent.py
 
 check: lint typecheck test  ## Everything CI runs, locally
 
