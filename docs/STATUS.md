@@ -12,10 +12,12 @@ The deterministic tool layer — the foundation the agent loop will drive.
 | 1.1 | Environment foundation (uv, pytest, ruff, pyright, CI) | Done — CI green |
 | 1.2 | Tool layer: 8 tools, normalized envelope, workspace jail, atomic patching | Done — 64 tests, smoke 10/10 |
 | 1.3 | Model benchmark (Qwen3.5-4B vs Nanbeige4.2-3B vs Nemotron-Bolt) | **Done — winner: Qwen3.5-4B MTP, 4.2 tok/s, all gates pass** (`docs/decisions.md`) |
-| 2 | Agent loop + CLI | Not started |
+| 2 | Agent loop + CLI | In progress — runtime layer (llama-server manager + chat client) landed |
 
-The agent loop does not exist yet. Nothing here talks to a language model;
-every tool is plain, deterministic Python.
+The agent loop does not exist yet. The runtime layer now manages a local
+`llama-server` and talks to it (verified live: health check, thinking-off
+chat, grammar-constrained tool calls, prompt-cache reuse); the tool layer
+below remains plain, deterministic Python.
 
 ## The tool layer (Phase 1.2)
 

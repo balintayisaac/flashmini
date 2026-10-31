@@ -83,3 +83,21 @@ expected on a 2-core CPU: n-max 2 beats 3 and 6 — deeper drafts are wasted
 work at moderate acceptance. ngram-cache needs a larger history to pay off.
 Nemotron-Bolt round skipped: weaker agent/tool benchmarks in its class and
 larger file; noted as re-checkable if a specific failure mode appears.
+
+## Runtime API validation — llama-server b12001 (2026-10-31)
+
+Probed live against the vendored server with the winning config
+(`-t 4 -c 4096 --spec-type draft-mtp --spec-draft-n-max 2`):
+
+| check | result |
+|---|---|
+| `/health` | `{"status":"ok"}` once loaded |
+| chat endpoint | OpenAI-compatible `/v1/chat/completions` |
+| thinking control | `chat_template_kwargs: {"enable_thinking": false}` required; otherwise `content` is empty and tokens go to `reasoning_content` |
+| `cache_prompt` | prefix reuse confirmed (`cached_tokens: 11/15`; the second request evaluated only the 4-token delta) |
+| MTP acceptance (logged) | 1.000 (4/4) on short calls; 0.778 (77/99) on a longer call |
+| per-request `json_schema` | enforced server-side; produced a valid tool-call object `{"tool": "read_file", "args": {"path": "pyproject.toml"}}` |
+
+The runtime layer (`src/flashmini/runtime/`) therefore uses thinking-off by
+default, `json_schema` for tool calls, and `cache_prompt: true` on every
+request.
