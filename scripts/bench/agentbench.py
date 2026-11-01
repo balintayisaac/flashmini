@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -28,8 +29,9 @@ from flashmini.tools import ToolContext, build_default_registry
 
 REPO = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO / "bench" / "results"
-MAX_STEPS = 8
+MAX_STEPS = 12
 LOCAL_MODEL_NOTE = "Qwen3.5-4B MTP UD-Q4_K_XL; --spec-type draft-mtp --spec-draft-n-max 2"
+VENDORED_RG = REPO / "vendor" / "bin" / "rg"
 
 
 # ---------------------------------------------------------------------------
@@ -182,6 +184,112 @@ def _proto_test_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
     return used(run, "run_tests"), f"tools={tools_used(run)}"
 
 
+def _bughunt_setup(ws: Path) -> None:
+    write(ws, "pyproject.toml", '[tool.pytest.ini_options]\npythonpath = ["."]\n')
+    write(ws, "app/__init__.py", "")
+    buggy = (
+        "def biggest(values):\n"
+        "    result = values[0]\n"
+        "    for v in values:\n"
+        "        if v < result:\n"
+        "            result = v\n"
+        "    return result\n"
+    )
+    write(ws, "app/scan.py", buggy)
+    write(
+        ws,
+        "tests/test_scan.py",
+        "from app.scan import biggest\n\n\n"
+        "def test_biggest():\n"
+        "    assert biggest([3, 9, 4]) == 9\n",
+    )
+
+
+def _bughunt_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
+    ok, detail = pytest_ok(ws)
+    flags = [t for t in ("run_tests", "read_file", "apply_patch") if used(run, t)]
+    return ok, f"{detail}; agent tools={flags}"
+
+
+def _multifile_setup(ws: Path) -> None:
+    write(ws, "pyproject.toml", '[tool.pytest.ini_options]\npythonpath = ["."]\n')
+    write(ws, "lib/__init__.py", "")
+    write(ws, "lib/pricing.py", "def calc(base, rate):\n    return base * rate\n")
+    write(ws, "app/__init__.py", "")
+    write(
+        ws,
+        "app/main.py",
+        "from lib.pricing import calc\n\n\ndef total(x):\n    return calc(x, 2)\n",
+    )
+    write(
+        ws,
+        "tests/test_pricing.py",
+        "from lib.pricing import compute\n\n\ndef test_compute():\n    assert compute(3, 2) == 6\n",
+    )
+    write(
+        ws,
+        "tests/test_main.py",
+        "from app.main import total\n\n\ndef test_total():\n    assert total(5) == 10\n",
+    )
+
+
+def _multifile_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
+    pricing = (ws / "lib/pricing.py").read_text()
+    main = (ws / "app/main.py").read_text()
+    ok, detail = pytest_ok(ws)
+    clean = "calc" not in pricing and "calc" not in main and "def compute" in pricing
+    return ok and clean, f"{detail}; rename_clean={clean}"
+
+
+def _adapt_setup(ws: Path) -> None:
+    write(ws, "settings.ini", "[app]\nname = demo\ntimeout_s = 10\n")
+
+
+def _adapt_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
+    content = (ws / "settings.ini").read_text()
+    expected = "[app]\nname = demo\ntimeout_s = 10\n[cache]\nsize_mb = 64"
+    ok = (
+        "[cache]" in content
+        and "size_mb = 64" in content
+        and "[app]" in content
+        and "timeout_s = 10" in content
+        and content.rstrip("\n") == expected
+    )
+    return ok, f"file={content!r}"
+
+
+def _writetest_setup(ws: Path) -> None:
+    write(ws, "pyproject.toml", '[tool.pytest.ini_options]\npythonpath = ["."]\n')
+    write(ws, "app/__init__.py", "")
+    write(ws, "app/stats.py", "def mean(values):\n    return sum(values) / len(values)\n")
+
+
+def _writetest_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
+    test_file = ws / "tests/test_mean.py"
+    if not test_file.exists():
+        return False, "tests/test_mean.py was not created"
+    text = test_file.read_text()
+    defs = text.count("def test_")
+    ok, detail = pytest_ok(ws)
+    wrote_tests = defs >= 2 and "mean" in text
+    need = used(run, "run_tests")
+    return ok and wrote_tests and need, f"{detail}; test_defs={defs}; used_run_tests={need}"
+
+
+def _typo_setup(ws: Path) -> None:
+    write(ws, "a.py", "FROBNICATOR = True\n")
+    write(ws, "b.py", "from a import FROBNICATOR\n")
+    write(ws, "c.py", "value = FROBNICATER\n")
+
+
+def _typo_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
+    files = {p.name: p.read_text() for p in ws.rglob("*.py") if ".flashmini" not in p.parts}
+    bad = any("FROBNICATER" in text for text in files.values())
+    fixed = "FROBNICATOR" in files.get("c.py", "")
+    greps = sum(1 for t in tools_used(run) if t == "grep")
+    return fixed and not bad and greps >= 1, f"greps={greps}; fixed={fixed}; bad_left={bad}"
+
+
 TASKS: list[Task] = [
     Task(
         "qa-read",
@@ -234,6 +342,46 @@ TASKS: list[Task] = [
         _proto_test_setup,
         _proto_test_grade,
     ),
+    Task(
+        "bug-hunt",
+        "Tests in this workspace are failing, but nothing tells you where the bug is. "
+        "Run the tests, locate the wrong function in app/, fix it, and verify. "
+        "Do not change the tests.",
+        _bughunt_setup,
+        _bughunt_grade,
+    ),
+    Task(
+        "multi-file",
+        "The tests import a function named compute, but the code defines and calls it as "
+        "calc. Rename calc to compute everywhere needed so all tests pass, and change "
+        "nothing else. When searching, grep for the bare identifier (calc) rather than "
+        "full import statements.",
+        _multifile_setup,
+        _multifile_grade,
+    ),
+    Task(
+        "adapt-recovery",
+        "Add a new section [cache] to settings.ini containing size_mb = 64. "
+        "Keep every existing line unchanged, then read the file back to verify.",
+        _adapt_setup,
+        _adapt_grade,
+    ),
+    Task(
+        "write-test",
+        "Write a new file tests/test_mean.py with two test cases for app.stats.mean: "
+        "a normal case and a single-value edge case. Run the tests and make sure "
+        "everything passes.",
+        _writetest_setup,
+        _writetest_grade,
+    ),
+    Task(
+        "typo-hunt",
+        "One file contains the misspelled identifier FROBNICATER. Find it with grep, "
+        "check where the name is actually defined to learn the correct spelling, "
+        "fix only that file, then verify with grep that the misspelling is gone.",
+        _typo_setup,
+        _typo_grade,
+    ),
 ]
 
 
@@ -256,6 +404,8 @@ class TaskResult:
 def run_suite(
     client: ChatClient, only: list[str] | None = None, verbose: bool = False
 ) -> list[TaskResult]:
+    if VENDORED_RG.exists():
+        os.environ.setdefault("FLASHMINI_RG", str(VENDORED_RG))
     tasks = [t for t in TASKS if not only or t.name in only]
     results: list[TaskResult] = []
     for task in tasks:

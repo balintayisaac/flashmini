@@ -1,0 +1,461 @@
+{
+  "stamp": "20261031-183500",
+  "endpoint": "local llama-server",
+  "model_note": "Qwen3.5-4B MTP UD-Q4_K_XL; --spec-type draft-mtp --spec-draft-n-max 2",
+  "passed": 3,
+  "total": 5,
+  "pass_rate": 0.6,
+  "results": [
+    {
+      "name": "bug-hunt",
+      "passed": true,
+      "detail": "pytest rc=0 (1 passed in 0.00s); agent tools=['run_tests', 'read_file', 'apply_patch']",
+      "tool_calls": 7,
+      "tools_used": [
+        "run_tests",
+        "symbol_search",
+        "symbol_search",
+        "read_file",
+        "apply_patch",
+        "apply_patch",
+        "run_tests"
+      ],
+      "wall_s": 183.3,
+      "final": "Fixed the bug in app/scan.py: changed 'if v < result:' to 'if v > result:' in the biggest() function. The test now passes.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {},
+          "status": "error",
+          "output": "F                                                                        [100%]\n=================================== FAILURES ===================================\n_________________________________ test_biggest _________________________________\n\n    def test_biggest():\n>       assert biggest([3, 9, 4]) == 9\nE       assert 3 == 9\nE        +  where 3 = biggest([3, 9, 4])\n\ntests/test_scan.py:5: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_scan.py::test_biggest - assert 3 == 9\n1 failed in 0.02s\n",
+          "hint": "0 passed, 1 failed; inspect the first failure and fix it"
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "symbol_search",
+          "args": {
+            "query": "def biggest"
+          },
+          "status": "ok",
+          "output": "no symbols found",
+          "hint": "no symbols matched; search the bare name (e.g. 'biggest'), not the whole definition"
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "symbol_search",
+          "args": {
+            "query": "biggest"
+          },
+          "status": "ok",
+          "output": "app/scan.py:1: function biggest\ntests/test_scan.py:4: function test_biggest",
+          "hint": "python-AST engine; tree-sitter symbol index arrives in Phase 3"
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "app/scan.py"
+          },
+          "status": "ok",
+          "output": "     1: def biggest(values):\n     2:     result = values[0]\n     3:     for v in values:\n     4:         if v < result:\n     5:             result = v\n     6:     return result",
+          "hint": null
+        },
+        {
+          "index": 4,
+          "kind": "tool",
+          "tool": "apply_patch",
+          "args": {
+            "patch": "*** Begin Patch\n*** Update File: app/scan.py\n@@\n-     if v < result:\n+     if v > result:\n*** End Patch"
+          },
+          "status": "error",
+          "output": "hunk does not match 'app/scan.py': no exact or whitespace-fuzzy match found\nNearest raw file content:\n  '    for v in values:'\n  '        if v < result:'\n  '            result = v'\nLeading whitespace differs: the file line has 8 leading space(s); copy it exactly.\n\nExpected format:\n*** Begin Patch\n*** Update File: example.py\n@@\n-old line\n+new line\n*** End Patch",
+          "hint": "rewrite the patch in the shown format and retry; no files were changed"
+        },
+        {
+          "index": 5,
+          "kind": "tool",
+          "tool": "apply_patch",
+          "args": {
+            "patch": "*** Begin Patch\n*** Update File: app/scan.py\n@@\n-        if v < result:\n+        if v > result:\n*** End Patch"
+          },
+          "status": "ok",
+          "output": "M app/scan.py (+1/-1)",
+          "hint": "review the changes with git diff before committing"
+        },
+        {
+          "index": 6,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {},
+          "status": "ok",
+          "output": ".                                                                        [100%]\n1 passed in 0.01s\n",
+          "hint": "1 passed, 0 failed"
+        },
+        {
+          "index": 7,
+          "kind": "final",
+          "raw": "{\"final\": \"Fixed the bug in app/scan.py: changed 'if v < result:' to 'if v > result:' in the biggest() function. The test now passes.\"}"
+        }
+      ]
+    },
+    {
+      "name": "multi-file",
+      "passed": false,
+      "detail": "pytest rc=2 (1 error in 0.13s); rename_clean=False",
+      "tool_calls": 8,
+      "tools_used": [
+        "git_ops",
+        "grep",
+        "read_file",
+        "grep",
+        "grep",
+        "grep",
+        "grep",
+        "read_file"
+      ],
+      "wall_s": 117.5,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "git_ops",
+          "args": {
+            "op": "status"
+          },
+          "status": "error",
+          "output": "(no output)",
+          "hint": "command exited with code 128"
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "def calc"
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-multi-file-ugc4bn_f/lib/pricing.py:1:def calc(base, rate):",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-multi-file-ugc4bn_f/lib/pricing.py"
+          },
+          "status": "ok",
+          "output": "     1: def calc(base, rate):\n     2:     return base * rate",
+          "hint": null
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "from pricing import calc"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with case_sensitive=false, a shorter pattern, or a broader regex"
+        },
+        {
+          "index": 4,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "from pricing import",
+            "case_sensitive": false
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with case_sensitive=false, a shorter pattern, or a broader regex"
+        },
+        {
+          "index": 5,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "import pricing"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with case_sensitive=false, a shorter pattern, or a broader regex"
+        },
+        {
+          "index": 6,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "calc",
+            "case_sensitive": false
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-multi-file-ugc4bn_f/app/main.py:1:from lib.pricing import calc\n/tmp/opencode/agentbench-multi-file-ugc4bn_f/app/main.py:5:    return calc(x, 2)\n/tmp/opencode/agentbench-multi-file-ugc4bn_f/lib/pricing.py:1:def calc(base, rate):",
+          "hint": null
+        },
+        {
+          "index": 7,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-multi-file-ugc4bn_f/app/main.py"
+          },
+          "status": "ok",
+          "output": "     1: from lib.pricing import calc\n     2: \n     3: \n     4: def total(x):\n     5:     return calc(x, 2)",
+          "hint": null
+        }
+      ]
+    },
+    {
+      "name": "adapt-recovery",
+      "passed": true,
+      "detail": "file='[app]\\nname = demo\\ntimeout_s = 10\\n[cache]\\nsize_mb = 64'",
+      "tool_calls": 5,
+      "tools_used": [
+        "read_file",
+        "apply_patch",
+        "apply_patch",
+        "write_file",
+        "read_file"
+      ],
+      "wall_s": 159.6,
+      "final": "The [cache] section with size_mb = 64 has been successfully added to settings.ini. Verification shows the file now contains:\n\n[app]\nname = demo\ntimeout_s = 10\n[cache]\nsize_mb = 64",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "settings.ini"
+          },
+          "status": "ok",
+          "output": "     1: [app]\n     2: name = demo\n     3: timeout_s = 10",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "apply_patch",
+          "args": {
+            "patch": "*** Begin Patch\n*** Update File: settings.ini\n@@\n-     3: timeout_s = 10\n+     3: timeout_s = 10\n+     4:\n+     5: [cache]\n+     6: size_mb = 64\n*** End Patch"
+          },
+          "status": "error",
+          "output": "hunk does not match 'settings.ini': no exact or whitespace-fuzzy match found\nThe hunk contains read_file display formatting (line numbers/tabs); write ONLY the raw file text.\nNearest raw file content:\n  'name = demo'\n  'timeout_s = 10'\n\nExpected format:\n*** Begin Patch\n*** Update File: example.py\n@@\n-old line\n+new line\n*** End Patch",
+          "hint": "rewrite the patch in the shown format and retry; no files were changed"
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "apply_patch",
+          "args": {
+            "patch": "*** Begin Patch\n*** Update File: settings.ini\n@@\n-     3: timeout_s = 10\n+     3: timeout_s = 10\n+     4:\n+     5: [cache]\n+     6: size_mb = 64\n*** End Patch"
+          },
+          "status": "error",
+          "output": "hunk does not match 'settings.ini': no exact or whitespace-fuzzy match found\nThe hunk contains read_file display formatting (line numbers/tabs); write ONLY the raw file text.\nNearest raw file content:\n  'name = demo'\n  'timeout_s = 10'\n\nExpected format:\n*** Begin Patch\n*** Update File: example.py\n@@\n-old line\n+new line\n*** End Patch",
+          "hint": "rewrite the patch in the shown format and retry; no files were changed"
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "settings.ini",
+            "content": "[app]\nname = demo\ntimeout_s = 10\n[cache]\nsize_mb = 64"
+          },
+          "status": "ok",
+          "output": "wrote 53 chars to settings.ini (backup: .flashmini/backups/20261031-184202/settings.ini)",
+          "hint": null
+        },
+        {
+          "index": 4,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "settings.ini"
+          },
+          "status": "ok",
+          "output": "     1: [app]\n     2: name = demo\n     3: timeout_s = 10\n     4: [cache]\n     5: size_mb = 64",
+          "hint": null
+        },
+        {
+          "index": 5,
+          "kind": "final",
+          "raw": "{\"final\": \"The [cache] section with size_mb = 64 has been successfully added to settings.ini. Verification shows the file now contains:\\n\\n[app]\\nname = demo\\ntimeout_s = 10\\n[cache]\\nsize_mb = 64\"}"
+        }
+      ]
+    },
+    {
+      "name": "write-test",
+      "passed": true,
+      "detail": "pytest rc=0 (2 passed in 0.01s); test_defs=2; used_run_tests=True",
+      "tool_calls": 3,
+      "tools_used": [
+        "write_file",
+        "write_file",
+        "run_tests"
+      ],
+      "wall_s": 137.7,
+      "final": "Created tests/test_mean.py with two test cases for app.stats.mean (normal case and single-value edge case). Both tests passed successfully.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "tests/test_mean.py",
+            "content": "import pytest\nfrom app.stats import mean\n\n\ndef test_mean_normal_case():\n    \"\"\"Test mean with a normal list of numbers.\"\"\"\n    result = mean([1, 2, 3, 4, 5])\n    assert result == 3.0\n\n\ndef test_mean_single_value():\n    \"\"\"Test mean with a single value.\"\"\"\n    result = mean([42])\n    assert result == 42.0\n"
+          },
+          "status": "error",
+          "output": "parent directory does not exist: /tmp/opencode/agentbench-write-test-pabgxe1l/tests",
+          "hint": "pass create_parents=True to create missing directories"
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "tests/test_mean.py",
+            "content": "import pytest\nfrom app.stats import mean\n\n\ndef test_mean_normal_case():\n    \"\"\"Test mean with a normal list of numbers.\"\"\"\n    result = mean([1, 2, 3, 4, 5])\n    assert result == 3.0\n\n\ndef test_mean_single_value():\n    \"\"\"Test mean with a single value.\"\"\"\n    result = mean([42])\n    assert result == 42.0\n",
+            "create_parents": true
+          },
+          "status": "ok",
+          "output": "wrote 306 chars to tests/test_mean.py",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {
+            "command": "pytest tests/test_mean.py"
+          },
+          "status": "ok",
+          "output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.17, pytest-9.2.0, pluggy-1.7.0\nrootdir: /tmp/opencode/agentbench-write-test-pabgxe1l\nconfigfile: pyproject.toml\ncollected 2 items\n\ntests/test_mean.py ..                                                    [100%]\n\n============================== 2 passed in 0.01s ===============================\n",
+          "hint": "2 passed, 0 failed"
+        },
+        {
+          "index": 3,
+          "kind": "final",
+          "raw": "{\"final\": \"Created tests/test_mean.py with two test cases for app.stats.mean (normal case and single-value edge case). Both tests passed successfully.\"}"
+        }
+      ]
+    },
+    {
+      "name": "typo-hunt",
+      "passed": false,
+      "detail": "greps=5; fixed=False; bad_left=True",
+      "tool_calls": 8,
+      "tools_used": [
+        "grep",
+        "read_file",
+        "symbol_search",
+        "grep",
+        "grep",
+        "grep",
+        "grep",
+        "read_file"
+      ],
+      "wall_s": 116.8,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "FROBNICATER"
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-k7i7b6hv/c.py:1:value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-typo-hunt-k7i7b6hv/c.py"
+          },
+          "status": "ok",
+          "output": "     1: value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "symbol_search",
+          "args": {
+            "query": "FROBNICATER"
+          },
+          "status": "ok",
+          "output": "no symbols found",
+          "hint": "no symbols matched; search the bare name (e.g. 'biggest'), not the whole definition"
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frobnicate"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with case_sensitive=false, a shorter pattern, or a broader regex"
+        },
+        {
+          "index": 4,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frobnicate",
+            "case_sensitive": false
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-k7i7b6hv/c.py:1:value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 5,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frobnicator"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with case_sensitive=false, a shorter pattern, or a broader regex"
+        },
+        {
+          "index": 6,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frobnicator",
+            "case_sensitive": false
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-k7i7b6hv/a.py:1:FROBNICATOR = True\n/tmp/opencode/agentbench-typo-hunt-k7i7b6hv/b.py:1:from a import FROBNICATOR",
+          "hint": null
+        },
+        {
+          "index": 7,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-typo-hunt-k7i7b6hv/a.py"
+          },
+          "status": "ok",
+          "output": "     1: FROBNICATOR = True",
+          "hint": null
+        }
+      ]
+    }
+  ]
+}
