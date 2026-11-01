@@ -147,6 +147,21 @@ def write_file(
             duration_ms=elapsed_ms(started),
             next_action_hint="remove the line-number prefixes from every line and retry",
         )
+    if target.exists():
+        try:
+            existing = target.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            existing = None
+        if existing == content:
+            return ToolResult.ok(
+                tool,
+                f"no changes: {path} content is identical to what was written",
+                duration_ms=elapsed_ms(started),
+                next_action_hint=(
+                    "your write changed nothing; if you intended a fix, the old "
+                    "content is still in place — make the actual edit"
+                ),
+            )
     backup_path = backup_file(ctx, target) if backup else None
     atomic_write(target, content)
     output = f"wrote {len(content)} chars to {path}"

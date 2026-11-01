@@ -377,7 +377,8 @@ TASKS: list[Task] = [
     Task(
         "typo-hunt",
         "One file contains the misspelled identifier FROBNICATER. Find it with grep, "
-        "check where the name is actually defined to learn the correct spelling, "
+        "check where the name is actually defined to learn the correct spelling "
+        "(grep a shorter stem of the name, case-insensitive, to catch every variant), "
         "fix only that file, then verify with grep that the misspelling is gone.",
         _typo_setup,
         _typo_grade,

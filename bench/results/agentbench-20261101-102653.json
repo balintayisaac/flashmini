@@ -1,0 +1,126 @@
+{
+  "stamp": "20261101-102653",
+  "endpoint": "local llama-server",
+  "model_note": "Qwen3.5-4B MTP UD-Q4_K_XL; --spec-type draft-mtp --spec-draft-n-max 2",
+  "passed": 1,
+  "total": 1,
+  "pass_rate": 1.0,
+  "results": [
+    {
+      "name": "typo-hunt",
+      "passed": true,
+      "detail": "greps=6; fixed=True; bad_left=False",
+      "tool_calls": 8,
+      "tools_used": [
+        "grep",
+        "grep",
+        "read_file",
+        "write_file",
+        "grep",
+        "grep",
+        "grep",
+        "grep"
+      ],
+      "wall_s": 860.3,
+      "final": "The misspelled identifier FROBNICATER in c.py has been corrected to FROBNICATOR. Verification confirms the misspelling is gone and the correct spelling now appears in the file.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "FROBNICATER"
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-5ory64xp/c.py:1:value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frob",
+            "case_sensitive": false
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-5ory64xp/b.py:1:from a import FROBNICATOR\n/tmp/opencode/agentbench-typo-hunt-5ory64xp/a.py:1:FROBNICATOR = True\n/tmp/opencode/agentbench-typo-hunt-5ory64xp/c.py:1:value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-typo-hunt-5ory64xp/c.py"
+          },
+          "status": "ok",
+          "output": "     1: value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-typo-hunt-5ory64xp/c.py",
+            "content": "value = FROBNICATOR"
+          },
+          "status": "ok",
+          "output": "wrote 19 chars to /tmp/opencode/agentbench-typo-hunt-5ory64xp/c.py (backup: .flashmini/backups/20261101-103439/c.py)",
+          "hint": null
+        },
+        {
+          "index": 4,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frob"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with a shorter pattern (e.g. just the bare identifier), a broader regex, or case_sensitive=false"
+        },
+        {
+          "index": 5,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frob"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with a shorter pattern (e.g. just the bare identifier), a broader regex, or case_sensitive=false"
+        },
+        {
+          "index": 6,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frob",
+            "case_sensitive": false
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-5ory64xp/c.py:1:value = FROBNICATOR\n/tmp/opencode/agentbench-typo-hunt-5ory64xp/a.py:1:FROBNICATOR = True\n/tmp/opencode/agentbench-typo-hunt-5ory64xp/b.py:1:from a import FROBNICATOR",
+          "hint": null
+        },
+        {
+          "index": 7,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "FROBNICATER"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with a shorter pattern (e.g. just the bare identifier), a broader regex, or case_sensitive=false"
+        },
+        {
+          "index": 8,
+          "kind": "final",
+          "raw": "{\"final\": \"The misspelled identifier FROBNICATER in c.py has been corrected to FROBNICATOR. Verification confirms the misspelling is gone and the correct spelling now appears in the file.\"}"
+        }
+      ]
+    }
+  ]
+}

@@ -78,3 +78,17 @@ def test_write_rejects_display_copy(ctx: ToolContext) -> None:
 def test_write_allows_single_numbered_line(ctx: ToolContext) -> None:
     result = write_file(ctx, "note.txt", "42: the answer\n")
     assert result.status is ToolStatus.OK
+
+
+def test_write_file_identical_content_is_noop(tmp_path) -> None:
+    """Round-6 trace: the model rewrote the typo back unchanged ("wrote 20 chars").
+
+    A no-op write must say so instead of pretending progress was made.
+    """
+    ctx = ToolContext(workspace=tmp_path)
+    (tmp_path / "a.txt").write_text("same\n")
+    result = write_file(ctx, "a.txt", "same\n")
+    assert result.status == ToolStatus.OK
+    assert "identical" in result.output
+    assert result.next_action_hint is not None
+    assert "changed nothing" in result.next_action_hint

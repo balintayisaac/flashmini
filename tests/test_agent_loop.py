@@ -64,6 +64,15 @@ class TestSchemas:
         assert 'Never use the "final" field' in prompt
         assert "literal file text" in prompt
 
+    def test_system_prompt_forbids_invented_spellings(self, tmp_path: Path) -> None:
+        """Probe #6: the model replaced FROBNICATER with the invented word
+        'frobnicate' (its own grep pattern), never locating the real definition.
+        The prompt must forbid inventing spellings and teach stem-searching."""
+        prompt = build_system_prompt(_registry(tmp_path).names())
+        assert "Never invent or normalize a spelling" in prompt
+        assert "shorter stem" in prompt
+        assert "never guess identifiers" in prompt
+
 
 class TestAgentLoop:
     def test_final_only_finishes_without_tools(self, tmp_path: Path) -> None:
@@ -148,6 +157,67 @@ class TestAgentLoop:
         assert run.finished is True
         last_request = client.requests[3][-1]["content"]
         assert "same result" not in last_request
+
+
+class TestUnseenNameGuard:
+    """v8: names written into existing files must come from evidence, not invention.
+
+    Round-4/6 typo-hunt traces: the model invented `frobnicate` (its own grep
+    pattern) and never saw the real spelling. The loop must warn when written
+    content contains a name that has never appeared in any tool output or the
+    task text.
+    """
+
+    def test_write_existing_file_with_unseen_name_warns(self, tmp_path: Path) -> None:
+        (tmp_path / "c.py").write_text("value = FROBNICATER\n")
+        write_call = (
+            '{"tool": "write_file", "args": {"path": "c.py", "content": "value = frobnicate\\n"}}'
+        )
+        client = FakeClient(
+            [
+                '{"tool": "grep", "args": {"pattern": "FROBNICATER"}}',
+                write_call,
+                '{"final": "fixed"}',
+            ]
+        )
+        run = AgentLoop(_registry(tmp_path), client).run("fix the misspelled value")
+        assert run.finished is True
+        after_write = client.requests[2][-1]["content"]
+        assert "frobnicate" in after_write
+        assert "never appeared" in after_write
+        assert "shorter stem" in after_write
+
+    def test_task_mentioned_name_is_not_flagged(self, tmp_path: Path) -> None:
+        """Names the task text itself asks for (e.g. multi-file rename target) are legit."""
+        (tmp_path / "c.py").write_text("value = FROBNICATER\n")
+        write_call = (
+            '{"tool": "write_file", "args": {"path": "c.py", "content": "value = frobnicate\\n"}}'
+        )
+        client = FakeClient(
+            [
+                '{"tool": "grep", "args": {"pattern": "FROBNICATER"}}',
+                write_call,
+                '{"final": "renamed as requested"}',
+            ]
+        )
+        AgentLoop(_registry(tmp_path), client).run(
+            "the value should be called frobnicate; fix the file"
+        )
+        after_write = client.requests[2][-1]["content"]
+        assert "never appeared" not in after_write
+
+    def test_new_file_creation_does_not_warn(self, tmp_path: Path) -> None:
+        """Creating a fresh file legitimately introduces new names."""
+        client = FakeClient(
+            [
+                '{"tool": "write_file", "args": '
+                '{"path": "new_mod.py", "content": "def brand_new_helper():\\n    return 1\\n"}}',
+                '{"final": "created"}',
+            ]
+        )
+        AgentLoop(_registry(tmp_path), client).run("add a helper module")
+        after_write = client.requests[1][-1]["content"]
+        assert "never appeared" not in after_write
 
     def test_protocol_violation_gets_reminder_then_recovers(self, tmp_path: Path) -> None:
         client = FakeClient(["just some prose", '{"final": "ok"}'])

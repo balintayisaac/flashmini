@@ -1,0 +1,150 @@
+{
+  "stamp": "20261101-094022",
+  "endpoint": "local llama-server",
+  "model_note": "Qwen3.5-4B MTP UD-Q4_K_XL; --spec-type draft-mtp --spec-draft-n-max 2",
+  "passed": 0,
+  "total": 1,
+  "pass_rate": 0.0,
+  "results": [
+    {
+      "name": "typo-hunt",
+      "passed": false,
+      "detail": "greps=6; fixed=False; bad_left=False",
+      "tool_calls": 10,
+      "tools_used": [
+        "grep",
+        "read_file",
+        "symbol_search",
+        "grep",
+        "grep",
+        "read_file",
+        "grep",
+        "grep",
+        "write_file",
+        "grep"
+      ],
+      "wall_s": 944.1,
+      "final": "The misspelled identifier FROBNICATER was found in /tmp/opencode/agentbench-typo-hunt-2bg6xdts/c.py. It was corrected to 'frobnicate'. Verification with grep confirms the misspelling is gone.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "FROBNICATER"
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-2bg6xdts/c.py:1:value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-typo-hunt-2bg6xdts/c.py"
+          },
+          "status": "ok",
+          "output": "     1: value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "symbol_search",
+          "args": {
+            "query": "FROBNICATER"
+          },
+          "status": "ok",
+          "output": "no symbols found",
+          "hint": "no symbols matched; search the bare name (e.g. 'biggest'), not the whole definition"
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frobnicate"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with a shorter pattern (e.g. just the bare identifier), a broader regex, or case_sensitive=false"
+        },
+        {
+          "index": 4,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frobnicate",
+            "case_sensitive": false
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-2bg6xdts/c.py:1:value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 5,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-typo-hunt-2bg6xdts/c.py"
+          },
+          "status": "ok",
+          "output": "     1: value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 6,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frobnicate"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with a shorter pattern (e.g. just the bare identifier), a broader regex, or case_sensitive=false"
+        },
+        {
+          "index": 7,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frobnicate",
+            "case_sensitive": false
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-2bg6xdts/c.py:1:value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 8,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-typo-hunt-2bg6xdts/c.py",
+            "content": "value = frobnicate\n"
+          },
+          "status": "ok",
+          "output": "wrote 19 chars to /tmp/opencode/agentbench-typo-hunt-2bg6xdts/c.py (backup: .flashmini/backups/20261101-095226/c.py)",
+          "hint": null
+        },
+        {
+          "index": 9,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "FROBNICATER"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with a shorter pattern (e.g. just the bare identifier), a broader regex, or case_sensitive=false"
+        },
+        {
+          "index": 10,
+          "kind": "final",
+          "raw": "{\"final\": \"The misspelled identifier FROBNICATER was found in /tmp/opencode/agentbench-typo-hunt-2bg6xdts/c.py. It was corrected to 'frobnicate'. Verification with grep confirms the misspelling is gone.\"}"
+        }
+      ]
+    }
+  ]
+}

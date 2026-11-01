@@ -44,6 +44,21 @@ def _looks_like_plan(text: str) -> bool:
     return _PLANNING_RE.search(text[:200]) is not None
 
 
+_TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{3,}")
+
+UNSEEN_NAME_WARNING = (
+    "WARNING: {names} — these written names have never appeared in any file you "
+    "read, any search result, or the task. You may be inventing a name. grep a "
+    "shorter stem of each name case-insensitively to find the exact spelling used "
+    "in this codebase, then correct the file if needed."
+)
+
+
+def _tokens(text: str) -> set[str]:
+    """Lowercased identifier-shaped tokens (length >= 4) for name-evidence checks."""
+    return {m.group(0).lower() for m in _TOKEN_RE.finditer(text)}
+
+
 @dataclass
 class Step:
     """One model turn and what it decided to do."""
@@ -130,6 +145,7 @@ class AgentLoop:
         last_ok_sig: str | None = None
         last_ok_output: str | None = None
         ok_repeat_count = 0
+        vocab = _tokens(task)
 
         for index in range(self.max_steps):
             raw = self.client.chat_text(
@@ -212,6 +228,26 @@ class AgentLoop:
                     "arguments; switch approach: use write_file with the complete "
                     "corrected file content.\n" + message
                 )
+            unseen_warning = ""
+            if result.status is ToolStatus.OK and tool in ("write_file", "apply_patch"):
+                # Modifications of existing code must use names with evidence; fresh
+                # files (no backup marker) legitimately introduce new names.
+                is_modification = tool == "apply_patch" or "backup:" in result.output
+                if is_modification:
+                    if tool == "write_file":
+                        written = str(args.get("content", ""))
+                    else:
+                        written = "\n".join(
+                            line[1:]
+                            for line in str(args.get("patch", "")).splitlines()
+                            if line.startswith("+") and not line.startswith("+++")
+                        )
+                    unknown = sorted(_tokens(written) - vocab)[:5]
+                    if unknown:
+                        unseen_warning = UNSEEN_NAME_WARNING.format(names=", ".join(unknown))
+                vocab |= _tokens(result.output)
+            if unseen_warning:
+                message = unseen_warning + "\n" + message
             messages.append({"role": "user", "content": message})
 
         return run  # step budget exhausted without a final answer

@@ -15,7 +15,8 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     "read_file": "read_file(path, start_line?, end_line?) — read a file with line numbers",
     "write_file": (
         "write_file(path, content, create_parents?) — write or overwrite with RAW file text "
-        "(never the line numbers from read_file); a backup is kept"
+        "(never the line numbers from read_file); use only names seen in file contents — "
+        "never guess identifiers; a backup is kept"
     ),
     "apply_patch": (
         "apply_patch(patch) — apply a *** Begin Patch block atomically (all or nothing); "
@@ -79,6 +80,10 @@ def build_system_prompt(tool_names: list[str]) -> str:
         "  never copy the line numbers or tab separator from read_file output.",
         "- Before fixing or renaming an identifier, confirm the correct spelling",
         "  where it is defined or imported; use only names seen in file contents.",
+        "  Never invent or normalize a spelling: if every occurrence you find has",
+        "  the same odd form, that odd form is likely the typo itself — grep a",
+        "  shorter stem of the name (case-insensitive) to locate its correct",
+        "  definition and copy the exact form from file contents.",
         "- After each tool result, continue with the next tool call or the final answer.",
     ]
     return "\n".join(lines)
