@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -77,12 +78,16 @@ def steps_summary(run: AgentRun) -> list[dict[str, object]]:
 
 
 def pytest_ok(ws: Path) -> tuple[bool, str]:
+    # PYTHONDONTWRITEBYTECODE: a same-second, same-size .py edit would
+    # otherwise be masked by a stale __pycache__ entry (mtime+size check).
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", "-q", "--no-header", "-p", "no:cacheprovider"],
         cwd=ws,
         capture_output=True,
         text=True,
         timeout=180,
+        env=env,
     )
     tail = (proc.stdout.strip().splitlines() or [""])[-1]
     return proc.returncode == 0, f"pytest rc={proc.returncode} ({tail})"
@@ -290,6 +295,179 @@ def _typo_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
     return fixed and not bad and greps >= 1, f"greps={greps}; fixed={fixed}; bad_left={bad}"
 
 
+# ---------------------------------------------------------------------------
+# v9 hard tasks — capability axes: cross-file refactor with signature change,
+# cross-file debugging (cause away from symptom), spec implementation,
+# config repair, and a hand-built data transform.
+
+
+_PYPROJECT = '[tool.pytest.ini_options]\npythonpath = ["."]\n'
+
+_REFACTOR_CALC = "def conv(temp_c, offset=32):\n    return temp_c * 1.8 + offset\n"
+_REFACTOR_REPORT = (
+    "from app.calc import conv\n\ndef summary(temps):\n    return [conv(t) for t in temps]\n"
+)
+_REFACTOR_CLI = "from app.calc import conv\n\ndef show(t):\n    print(conv(t))\n"
+_REFACTOR_TESTS = (
+    "from app.calc import celsius_to_fahrenheit\n\n"
+    "def test_freezing():\n    assert celsius_to_fahrenheit(0) == 32.0\n\n"
+    "def test_boiling():\n    assert celsius_to_fahrenheit(100) == 212.0\n"
+)
+
+
+def _refactor_setup(ws: Path) -> None:
+    write(ws, "pyproject.toml", _PYPROJECT)
+    write(ws, "app/__init__.py", "")
+    write(ws, "tools/__init__.py", "")
+    write(ws, "app/calc.py", _REFACTOR_CALC)
+    write(ws, "app/report.py", _REFACTOR_REPORT)
+    write(ws, "tools/cli.py", _REFACTOR_CLI)
+    write(ws, "tests/test_calc.py", _REFACTOR_TESTS)
+
+
+def _refactor_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
+    ok, detail = pytest_ok(ws)
+    if not ok:
+        return False, detail
+    if "def celsius_to_fahrenheit" not in (ws / "app" / "calc.py").read_text():
+        return False, "celsius_to_fahrenheit not defined in app/calc.py"
+    for rel in ("app/calc.py", "app/report.py", "tools/cli.py"):
+        if re.search(r"\bconv\b", (ws / rel).read_text()):
+            return False, f"old name conv still present in {rel}"
+    return True, "renamed with baked-in offset; callers updated; pytest green"
+
+
+_TAX_BROKEN = (
+    "TAX_RATE = 0.8\n\ndef with_tax(amount):\n    return round(amount * (1 + TAX_RATE), 2)\n"
+)
+_CART_PY = "from lib.tax import with_tax\n\ndef total(prices):\n    return with_tax(sum(prices))\n"
+_CART_TESTS = (
+    "from app.cart import total\n\n\ndef test_total():\n    assert total([10.0, 2.5]) == 15.0\n"
+)
+
+
+def _debugcross_setup(ws: Path) -> None:
+    write(ws, "pyproject.toml", _PYPROJECT)
+    write(ws, "app/__init__.py", "")
+    write(ws, "lib/__init__.py", "")
+    write(ws, "lib/tax.py", _TAX_BROKEN)
+    write(ws, "app/cart.py", _CART_PY)
+    write(ws, "tests/test_cart.py", _CART_TESTS)
+
+
+def _debugcross_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
+    ok, detail = pytest_ok(ws)
+    if not ok:
+        return False, detail
+    if (ws / "app" / "cart.py").read_text() != _CART_PY:
+        return False, "app/cart.py was modified (task forbids it)"
+    if (ws / "tests" / "test_cart.py").read_text() != _CART_TESTS:
+        return False, "tests were modified (task forbids it)"
+    if "TAX_RATE = 0.2" not in (ws / "lib" / "tax.py").read_text():
+        return False, "cause not fixed: TAX_RATE is still not 0.2 in lib/tax.py"
+    return True, "cause fixed in lib/tax.py; symptom file and tests untouched"
+
+
+_SLUG_SPEC = (
+    "# slugify spec\n"
+    "\n"
+    "slugify(text) converts a string to a slug:\n"
+    "- lowercase everything\n"
+    "- replace every run of non-alphanumeric characters with a single hyphen\n"
+    "- strip leading and trailing hyphens\n"
+    '- if the result is empty, return "n-a"\n'
+    "\n"
+    "Examples:\n"
+    '- "Hello, World!" -> "hello-world"\n'
+    '- "  A  B  " -> "a-b"\n'
+    '- "***" -> "n-a"\n'
+)
+_SLUG_TESTS = (
+    "from app.slug import slugify\n\n"
+    "def test_basic():\n    assert slugify('Hello, World!') == 'hello-world'\n\n"
+    "def test_spaces():\n    assert slugify('  A  B  ') == 'a-b'\n\n"
+    "def test_symbols():\n    assert slugify('***') == 'n-a'\n\n"
+    "def test_empty():\n    assert slugify('') == 'n-a'\n"
+)
+
+
+def _spec_setup(ws: Path) -> None:
+    write(ws, "pyproject.toml", _PYPROJECT)
+    write(ws, "app/__init__.py", "")
+    write(ws, "SPEC.md", _SLUG_SPEC)
+    write(ws, "tests/test_slugify.py", _SLUG_TESTS)
+
+
+def _spec_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
+    ok, detail = pytest_ok(ws)
+    if not ok:
+        return False, detail
+    if not (ws / "app" / "slug.py").exists():
+        return False, "app/slug.py missing"
+    return True, "spec implemented; pre-written tests green"
+
+
+_SETTINGS_PY = (
+    "import configparser\n\n\n"
+    "config = configparser.ConfigParser()\n"
+    'config.read("config.ini")\n\n'
+    'HOST = config.get("server", "host")\n'
+    'PORT = config.getint("server", "port")\n'
+    'DEBUG = config.getboolean("server", "debug")\n'
+)
+_SETTINGS_INI_BROKEN = "[SERVER]\nhost = localhost\nport = eight-thousand\ndebug = maybe\n"
+_SETTINGS_TESTS = (
+    "from app.settings import DEBUG, HOST, PORT\n\n"
+    "def test_values():\n    assert (HOST, PORT, DEBUG) == ('localhost', 8080, False)\n"
+)
+
+
+def _config_setup(ws: Path) -> None:
+    write(ws, "pyproject.toml", _PYPROJECT)
+    write(ws, "app/__init__.py", "")
+    write(ws, "app/settings.py", _SETTINGS_PY)
+    write(ws, "config.ini", _SETTINGS_INI_BROKEN)
+    write(ws, "tests/test_settings.py", _SETTINGS_TESTS)
+
+
+def _config_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
+    ok, detail = pytest_ok(ws)
+    if not ok:
+        return False, detail
+    if (ws / "app" / "settings.py").read_text() != _SETTINGS_PY:
+        return False, "app/settings.py was modified (task forbids it)"
+    if (ws / "tests" / "test_settings.py").read_text() != _SETTINGS_TESTS:
+        return False, "tests were modified (task forbids it)"
+    return True, "config.ini repaired; code and tests untouched"
+
+
+_USERS_CSV = "name,role,active\nZed,ops,yes\nAda,admin,yes\nBob,dev,no\nMia,dev,yes\n"
+_PIPELINE_EXPECTED: list[dict[str, object]] = [
+    {"name": "Ada", "role": "admin", "active": True},
+    {"name": "Mia", "role": "dev", "active": True},
+    {"name": "Zed", "role": "ops", "active": True},
+]
+
+
+def _pipeline_setup(ws: Path) -> None:
+    write(ws, "data/users.csv", _USERS_CSV)
+
+
+def _pipeline_grade(ws: Path, run: AgentRun) -> tuple[bool, str]:
+    path = ws / "data" / "users.json"
+    if not path.exists():
+        return False, "data/users.json not created"
+    try:
+        rows = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        return False, f"invalid JSON: {exc}"
+    if rows != _PIPELINE_EXPECTED:
+        return False, "JSON mismatch (need active-only, sorted by name, boolean active)"
+    if (ws / "data" / "users.csv").read_text() != _USERS_CSV:
+        return False, "users.csv was modified (task forbids it)"
+    return True, "correct JSON produced by hand; CSV untouched"
+
+
 TASKS: list[Task] = [
     Task(
         "qa-read",
@@ -382,6 +560,46 @@ TASKS: list[Task] = [
         "fix only that file, then verify with grep that the misspelling is gone.",
         _typo_setup,
         _typo_grade,
+    ),
+    Task(
+        "refactor-sig",
+        "The function conv in app/calc.py takes an offset argument. Rename it to "
+        "celsius_to_fahrenheit, remove the offset parameter, and bake the value 32 "
+        "into the function body. Callers of conv exist in other files: find them "
+        "with grep and update every one so all tests pass. Do not change the tests.",
+        _refactor_setup,
+        _refactor_grade,
+    ),
+    Task(
+        "debug-cross",
+        "The tests are failing. The bug is NOT in app/cart.py — find the real cause "
+        "elsewhere and fix it. Do not change app/cart.py or the tests.",
+        _debugcross_setup,
+        _debugcross_grade,
+    ),
+    Task(
+        "implement-spec",
+        "Read SPEC.md, then create the file app/slug.py with a slugify function "
+        "exactly as the spec describes. Run the tests and make sure they pass. "
+        "Do not change the tests or the spec.",
+        _spec_setup,
+        _spec_grade,
+    ),
+    Task(
+        "config-recovery",
+        "The app fails to read config.ini. Fix the configuration file so the tests "
+        "pass. Do not change app/settings.py or the tests.",
+        _config_setup,
+        _config_grade,
+    ),
+    Task(
+        "pipeline",
+        "Convert data/users.csv into data/users.json by hand (there are no tests to "
+        "run): keep only rows where active is yes, sort them by name, and represent "
+        "active as a JSON boolean. Keep the fields name, role, active. Do not modify "
+        "the CSV.",
+        _pipeline_setup,
+        _pipeline_grade,
     ),
 ]
 

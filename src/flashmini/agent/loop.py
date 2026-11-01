@@ -146,6 +146,12 @@ class AgentLoop:
         last_ok_output: str | None = None
         ok_repeat_count = 0
         vocab = _tokens(task)
+        # Per-run repeat counters: consecutive-only tracking resets whenever any
+        # other call intervenes, which is exactly how real loops hide (v9 probe:
+        # 4 no-op writes and 10 identical failed reads, guards never fired).
+        fail_counts: dict[str, int] = {}
+        ok_counts: dict[str, int] = {}
+        noop_writes: dict[str, int] = {}
 
         for index in range(self.max_steps):
             raw = self.client.chat_text(
@@ -207,6 +213,21 @@ class AgentLoop:
                 ok_repeat_count = 0
             last_ok_sig = signature if ok_output is not None else None
             last_ok_output = ok_output
+            ok_total = 0
+            if result.status is not ToolStatus.OK:
+                fail_counts[signature] = fail_counts.get(signature, 0) + 1
+            else:
+                ok_key = f"{signature}|{result.output}"
+                ok_total = ok_counts.get(ok_key, 0) + 1
+                ok_counts[ok_key] = ok_total
+            noop_path: str | None = None
+            if (
+                tool == "write_file"
+                and result.status is ToolStatus.OK
+                and result.output.startswith("no changes:")
+            ):
+                noop_path = str(args.get("path", "the file"))
+                noop_writes[noop_path] = noop_writes.get(noop_path, 0) + 1
             if tool == "apply_patch":
                 patch_failures = 0 if result.status is ToolStatus.OK else patch_failures + 1
             message = "Tool result:\n" + envelope_message(result)
@@ -227,6 +248,29 @@ class AgentLoop:
                     f"apply_patch has failed {patch_failures} times against different "
                     "arguments; switch approach: use write_file with the complete "
                     "corrected file content.\n" + message
+                )
+            if result.status is not ToolStatus.OK and fail_counts.get(signature, 0) >= 2:
+                message = (
+                    f"WARNING: this exact call has now failed "
+                    f"{fail_counts[signature]} times in this task (calls in between "
+                    "do not reset the count). Do not repeat it — change the "
+                    "arguments or the approach.\n" + message
+                )
+            if ok_total >= 3:
+                message = (
+                    f"WARNING: you have now run this exact call "
+                    f"{ok_total} times with identical results across this "
+                    "task. The result will not change — act on it (make the edit "
+                    "or give the answer) or change strategy.\n" + message
+                )
+            if noop_path is not None and noop_writes[noop_path] >= 2:
+                message = (
+                    f"WARNING: you have now written identical content to {noop_path} "
+                    f"{noop_writes[noop_path]} times — the file already has exactly "
+                    "this content, so repeating this write can never help. Treat "
+                    f"{noop_path} as done; the remaining work is elsewhere: run the "
+                    "tests (run_tests) or grep for the names the task asks you to "
+                    "change, and edit those files.\n" + message
                 )
             unseen_warning = ""
             if result.status is ToolStatus.OK and tool in ("write_file", "apply_patch"):

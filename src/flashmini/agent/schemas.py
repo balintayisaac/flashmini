@@ -54,6 +54,26 @@ def build_system_prompt(tool_names: list[str]) -> str:
         "If the work is not done yet, your reply MUST be a tool call —",
         "never a description of what you plan to do.",
         "",
+        "Rules:",
+        # prompt-master skill: the most-violated rules go first — they must
+        # survive attention decay on a 4B model.
+        "- If a tool call fails, do not repeat it unchanged: fix the root cause first.",
+        "- Before fixing or renaming an identifier, confirm the correct spelling",
+        "  where it is defined or imported; use only names seen in file contents.",
+        "  Never invent or normalize a spelling: if every occurrence you find has",
+        "  the same odd form, that odd form is likely the typo itself — grep a",
+        "  shorter stem of the name (case-insensitive) to locate its correct",
+        "  definition and copy the exact form from file contents.",
+        "- Look before you change: read a file before patching it.",
+        "- Never claim something works unless a tool result confirms it.",
+        "- If apply_patch fails twice on the same file, switch approach:",
+        "  use write_file with the complete corrected file content.",
+        '- Never use the "final" field to describe a step you plan to take:',
+        '  call the tool and do it. "final" is the completed answer.',
+        "- When writing file content or patch lines, write only the literal file text:",
+        "  never copy the line numbers or tab separator from read_file output.",
+        "- After each tool result, continue with the next tool call or the final answer.",
+        "",
         "Tools:",
     ]
     for name in tool_names:
@@ -66,24 +86,4 @@ def build_system_prompt(tool_names: list[str]) -> str:
             PATCH_FORMAT_TEMPLATE,
             "Copy context lines verbatim from the file you read.",
         ]
-    lines += [
-        "",
-        "Rules:",
-        "- Look before you change: read a file before patching it.",
-        "- Never claim something works unless a tool result confirms it.",
-        "- If a tool call fails, do not repeat it unchanged: fix the root cause first.",
-        "- If apply_patch fails twice on the same file, switch approach:",
-        "  use write_file with the complete corrected file content.",
-        '- Never use the "final" field to describe a step you plan to take:',
-        '  call the tool and do it. "final" is the completed answer.',
-        "- When writing file content or patch lines, write only the literal file text:",
-        "  never copy the line numbers or tab separator from read_file output.",
-        "- Before fixing or renaming an identifier, confirm the correct spelling",
-        "  where it is defined or imported; use only names seen in file contents.",
-        "  Never invent or normalize a spelling: if every occurrence you find has",
-        "  the same odd form, that odd form is likely the typo itself — grep a",
-        "  shorter stem of the name (case-insensitive) to locate its correct",
-        "  definition and copy the exact form from file contents.",
-        "- After each tool result, continue with the next tool call or the final answer.",
-    ]
     return "\n".join(lines)

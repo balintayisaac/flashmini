@@ -76,7 +76,11 @@ def read_file(
             tool,
             f"file not found: {path}",
             duration_ms=elapsed_ms(started),
-            next_action_hint="list the directory first to find the right path",
+            next_action_hint=(
+                "if the task asks you to create this file, write it with "
+                "write_file; otherwise pass its parent directory to read_file "
+                "to list the directory"
+            ),
         )
     raw = target.read_bytes()[: ctx.max_read_bytes + 1]
     if b"\x00" in raw[:_BINARY_SAMPLE]:

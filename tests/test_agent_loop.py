@@ -73,6 +73,17 @@ class TestSchemas:
         assert "shorter stem" in prompt
         assert "never guess identifiers" in prompt
 
+    def test_critical_rules_precede_tool_list(self, tmp_path: Path) -> None:
+        """prompt-master skill: critical constraints must sit in the first 30%
+        of the prompt (attention decay). The anti-loop and identifier rules the
+        model violates most must appear BEFORE the tool reference list."""
+        prompt = build_system_prompt(_registry(tmp_path).names())
+        fail_idx = prompt.index("If a tool call fails, do not repeat it unchanged")
+        spell_idx = prompt.index("Never invent or normalize a spelling")
+        tools_idx = prompt.index("Tools:")
+        assert fail_idx < tools_idx
+        assert spell_idx < tools_idx
+
 
 class TestAgentLoop:
     def test_final_only_finishes_without_tools(self, tmp_path: Path) -> None:
