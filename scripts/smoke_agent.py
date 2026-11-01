@@ -1,7 +1,7 @@
 """Live end-to-end smoke: the real model drives the agent loop against this repo.
 
 Starts the winner configuration (Qwen3.5-4B MTP, --spec-type draft-mtp,
---spec-draft-n-max 2) under llama-server, then asks the agent to complete a
+--spec-draft-n-max 1) under llama-server, then asks the agent to complete a
 small read-and-report task using the tool layer.
 
 Run: uv run python scripts/smoke_agent.py   (make smoke-agent)

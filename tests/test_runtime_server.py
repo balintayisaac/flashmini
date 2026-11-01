@@ -30,6 +30,8 @@ def _touch(path: Path) -> Path:
 
 class TestBuildServerArgs:
     def test_defaults_include_mtp_speculation(self, tmp_path: Path) -> None:
+        """A1 sweep (mtp-sweep-20261101-173341.json): depth 1 ties depth 2 on
+        tok/s and costs 200 MB less peak RSS in all 6 paired measurements."""
         args = build_server_args(tmp_path / "llama-server", tmp_path / "m.gguf", port=9931)
         assert args[0].endswith("llama-server")
         assert args[1:3] == ["-m", str(tmp_path / "m.gguf")]
@@ -39,7 +41,7 @@ class TestBuildServerArgs:
         assert "-t 4" in joined
         assert "-c 4096" in joined
         assert "--spec-type draft-mtp" in joined
-        assert "--spec-draft-n-max 2" in joined
+        assert "--spec-draft-n-max 1" in joined
 
     def test_speculation_disabled(self, tmp_path: Path) -> None:
         args = build_server_args(

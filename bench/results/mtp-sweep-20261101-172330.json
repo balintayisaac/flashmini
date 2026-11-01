@@ -1,0 +1,78 @@
+{
+  "tool": "mtp_sweep",
+  "date": "2026-11-01T09:23:30+00:00",
+  "model": "Qwen3.5-4B-MTP-UD-Q4_K_XL.gguf",
+  "server_args": [
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "47901",
+    "-t",
+    "4",
+    "-c",
+    "4096"
+  ],
+  "n_predict": 128,
+  "results": [
+    {
+      "depth": 0,
+      "tok_s_median": 3.325,
+      "tok_s_all": [
+        3.405,
+        3.325,
+        3.23
+      ],
+      "peak_rss_gib": 4.402
+    },
+    {
+      "depth": 1,
+      "tok_s_median": 4.235,
+      "tok_s_all": [
+        3.861,
+        4.272,
+        4.235
+      ],
+      "peak_rss_gib": 4.836
+    },
+    {
+      "depth": 2,
+      "tok_s_median": 3.899,
+      "tok_s_all": [
+        3.436,
+        3.899,
+        3.938
+      ],
+      "peak_rss_gib": 5.034
+    },
+    {
+      "depth": 3,
+      "tok_s_median": 3.746,
+      "tok_s_all": [
+        3.746,
+        3.608,
+        3.796
+      ],
+      "peak_rss_gib": 5.233
+    },
+    {
+      "depth": 4,
+      "tok_s_median": 3.189,
+      "tok_s_all": [
+        3.178,
+        3.25,
+        3.189
+      ],
+      "peak_rss_gib": 5.537
+    },
+    {
+      "depth": 6,
+      "tok_s_median": 2.634,
+      "tok_s_all": [
+        2.695,
+        2.616,
+        2.634
+      ],
+      "peak_rss_gib": 5.833
+    }
+  ]
+}

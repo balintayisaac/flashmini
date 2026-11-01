@@ -1,9 +1,9 @@
 """Manage a local llama-server process and talk to it over HTTP.
 
 Defaults come from the Phase 1.3 model decision (docs/decisions.md):
-Qwen3.5-4B MTP with ``--spec-type draft-mtp --spec-draft-n-max 2``,
-measured at 4.2 tok/s generation with a ~4.5 GiB peak footprint at
-``-c 4096`` on the reference machine.
+Qwen3.5-4B MTP with ``--spec-type draft-mtp --spec-draft-n-max 1``,
+measured at ~4.2 tok/s generation with a ~4.8 GiB peak footprint at
+``-c 4096`` on the reference machine (A1 sweep, 2026-11-01).
 """
 
 from __future__ import annotations
@@ -24,7 +24,10 @@ from typing import IO, Any
 DEFAULT_THREADS = 4
 DEFAULT_CTX = 4096
 DEFAULT_SPEC_TYPE = "draft-mtp"
-DEFAULT_SPEC_DRAFT_N_MAX = 2
+# A1 sweep (bench/results/mtp-sweep-20261101-173341.json): depth 1 ties
+# depth 2 on tok/s (overlapping distributions) at 200 MB less peak RSS in
+# all 6 paired measurements — decisive on the swap-pressured 7.6 GiB box.
+DEFAULT_SPEC_DRAFT_N_MAX = 1
 DEFAULT_STARTUP_TIMEOUT_S = 180.0
 DEFAULT_CHAT_TIMEOUT_S = 600.0
 HEALTH_POLL_INTERVAL_S = 0.5

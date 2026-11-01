@@ -319,3 +319,47 @@ failure) to 88.5 s across three fix generations, and fix-test fell from
 194.2 s (round 5) to 93.4 s with the v10 guards active. The suite that
 started as 8 tasks at 7/8 now stands at 18 tasks, 18/18, with every fix
 from v1 through v10 live-verified on the recorded runs.
+
+## A1: MTP draft-depth sweep — production default 2 → 1 (2026-11-01)
+
+Roadmap item A1 (frontier-plan.md): the draft depth was picked in Phase 1.3
+from a sweep that tested n-max 6/3/2 and never 1. A new tool
+(`scripts/bench/mtp_sweep.py`, ruff+pyright clean, refuses to run while any
+bench or server is active) sweeps `--spec-draft-n-max` server-side and
+measures median generation tok/s (3 completions, n_predict 128, temp 0,
+`-t 4 -c 4096`) plus peak RSS (VmHWM).
+
+First sweep (mtp-sweep-20261101-172330.json):
+
+| depth | tok/s | peak RSS GiB |
+|---|---|---|
+| 0 (MTP off) | 3.325 | 4.402 |
+| 1 | 4.235 | 4.836 |
+| 2 (then-production) | 3.899 | 5.034 |
+| 3 | 3.746 | 5.233 |
+| 4 | 3.189 | 5.537 — breaches the 5.5 GiB gate |
+| 6 | 2.634 | 5.833 |
+
+Confirmation run (depths 1,2,1,2 — mtp-sweep-20261101-173341.json), pooled:
+
+| depth | 6-sample median | range | peak RSS GiB |
+|---|---|---|---|
+| 1 | 3.68 | 3.461–4.235 | 4.83 (6/6 runs) |
+| 2 | 3.57 | 3.448–4.234 | 5.03 (6/6 runs) |
+
+Honest read: the first sweep's +8.6% tok/s for depth 1 did **not**
+replicate — pooled, the two depths are a statistical tie with heavily
+overlapping distributions. What replicated exactly is memory: depth 1
+peaked 200 MiB lower in every one of the 6 paired measurements. Since
+speculative decoding cannot change output quality (rejection sampling
+preserves the target distribution regardless of depth), the decision
+criterion is speed and footprint. On this swap-pressured 7.6 GiB machine,
+a deterministic −200 MiB at tok/s parity is the better operating point.
+
+Production default switched: `DEFAULT_SPEC_DRAFT_N_MAX = 1`
+(`src/flashmini/runtime/server.py`, with the sweep citation in a comment),
+pinned by `test_defaults_include_mtp_speculation`; note strings updated in
+the bench harness, smoke script, STATUS.md and frontier-plan.md (A1 marked
+done). Absolute numbers this session sit below Phase 1.3's table (3.6–4.2
+vs 4.2 tok/s) — the box is under RAM pressure from an external ollama
+runner; the *relative* comparison is the evidence, not the absolutes.

@@ -31,7 +31,7 @@ from flashmini.tools import ToolContext, build_default_registry
 REPO = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO / "bench" / "results"
 MAX_STEPS = 12
-LOCAL_MODEL_NOTE = "Qwen3.5-4B MTP UD-Q4_K_XL; --spec-type draft-mtp --spec-draft-n-max 2"
+LOCAL_MODEL_NOTE = "Qwen3.5-4B MTP UD-Q4_K_XL; --spec-type draft-mtp --spec-draft-n-max 1"
 VENDORED_RG = REPO / "vendor" / "bin" / "rg"
 
 

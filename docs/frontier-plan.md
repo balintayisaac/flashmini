@@ -86,8 +86,8 @@ candidate filtering arrive in Phase 4.
 
 - The winner: **Qwen3.5-4B with multi-token-prediction heads**, hybrid Gated
   DeltaNet + attention, vision encoder included, apache-2.0. Config:
-  `--spec-type draft-mtp --spec-draft-n-max 2` (draft depth is tuned, not
-  assumed: n-max 2 beats 3 and 6 on this CPU).
+  `--spec-type draft-mtp --spec-draft-n-max 1` (draft depth re-swept
+  2026-11-01: depth 1 ties depth 2 on tok/s at 200 MB less peak RSS).
 - **Quantization is a compute lever, not only a memory lever.** CPU
   generation is memory-bandwidth bound (thread sweep is flat: 3.66 / 3.61 /
   3.57 t/s at 2 / 3 / 4 threads), so bits convert directly into speed.
@@ -213,9 +213,9 @@ shared with system daemons, one model resident at a time, gen ≥4 tok/s gate.
 
 ### Track A — Harness & serving upgrades (no training needed; can start now)
 
-- **A1. Re-sweep MTP depth.** Unsloth's MTP guide: `--spec-draft-n-max` is
-  hardware-dependent; try 1–6 and keep the fastest. Our `2` was picked weeks
-  ago; llama.cpp MTP kernels improve continuously. Cheap `llama-bench` sweep.
+- **A1. Re-sweep MTP depth.** DONE 2026-11-01 (mtp-sweep-20261101-172330 +
+  173341 JSONs, `scripts/bench/mtp_sweep.py`): depth 1 ties depth 2 on
+  tok/s, −200 MB RSS in 6/6 paired runs → production default switched to 1.
 - **A2. TurboQuant KV cache (tq3_0/tq2_0).** llama.cpp discussion #20969:
   extreme KV quant, CPU-only kernels (exactly our platform), output identical
   to f16 at T=0 on a 35B model, degrades only on ≤0.6B models. We rejected

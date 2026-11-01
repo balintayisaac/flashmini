@@ -64,7 +64,7 @@ CPU-only).
 Phase 2 continues: benchmark and harden. AgentBench v0 (8 deterministic
 tasks — read, search, patch, fix-test) scores the live agent end-to-end on
 the winning model (Qwen3.5-4B MTP under `llama-server` with prompt caching
-and `--spec-type draft-mtp --spec-draft-n-max 2`). Rounds: 7/8 → 8/8 → 8/8
+and `--spec-type draft-mtp --spec-draft-n-max 1`). Rounds: 7/8 → 8/8 → 8/8
 — every weakness found gets fixed and re-measured, and the score repeats.
 The suite then grew to 13 tasks; the five-task hard core (bug-hunt,
 multi-file, adapt-recovery, write-test, typo-hunt) went 3/5 → 3/5 → **5/5**
