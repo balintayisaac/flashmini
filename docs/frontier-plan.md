@@ -204,3 +204,107 @@ usable latency on this hardware** — not matched open-ended conversation.
 - **Claims discipline.** Every "planned" item above becomes real only when
   its numbers appear in `docs/decisions.md`. Until then it is a design, and
   it is labeled as one.
+
+## World-class roadmap — researched 2026-11-01 (sources at bottom)
+
+Research pass over the current (Oct–Nov 2026) small-coding-agent landscape,
+filtered through FlashMini's hard constraints: CPU-only inference, 7.6 GiB RAM
+shared with system daemons, one model resident at a time, gen ≥4 tok/s gate.
+
+### Track A — Harness & serving upgrades (no training needed; can start now)
+
+- **A1. Re-sweep MTP depth.** Unsloth's MTP guide: `--spec-draft-n-max` is
+  hardware-dependent; try 1–6 and keep the fastest. Our `2` was picked weeks
+  ago; llama.cpp MTP kernels improve continuously. Cheap `llama-bench` sweep.
+- **A2. TurboQuant KV cache (tq3_0/tq2_0).** llama.cpp discussion #20969:
+  extreme KV quant, CPU-only kernels (exactly our platform), output identical
+  to f16 at T=0 on a 35B model, degrades only on ≤0.6B models. We rejected
+  q8_0/q4_0 KV on *speed*; tq types target *memory* — if quality holds on the
+  4B, the freed GiB buys 12–16k context (longer tasks, fewer truncations).
+  Gate: same agentbench probe score + tg/pp speed within tolerance.
+- **A3. Loop: stall-state detection.** SWE-Protégé (arXiv:2602.22124) trains
+  agents to "recognize stalled states" with RL that explicitly penalizes
+  degenerate looping — independent confirmation that looping is *the* SLM
+  failure mode (our v6/v8 guards attack it at inference time). Next loop
+  feature: budget-aware stall warnings (steps remaining, no-state-change
+  streak) injected as tool-result warnings — the surface we proved the 4B obeys.
+- **A4. Context memory management (SWE-MeM, arXiv:2606.28434).** Learned
+  memory dropping/summarizing took Qwen3-4B from 7.0%→43.4% on SWE-bench
+  Verified *at 32k context* — at our 4k context the headroom is larger.
+  Inference-time version for FlashMini: compress/evict stale tool outputs
+  between steps, keep a running task-state digest in the loop (no training).
+- **A5. Symbol-graph tool.** arXiv:2610.33958: structured localization tools
+  (call-graph/embedding) **double** grep-only accuracy exactly at 1.7–4B —
+  the largest per-size gain in the study; gains vanish by 32B. A lightweight
+  "references of X" / ctags-style index tool is the highest-leverage tool
+  addition for our size class. (Caveat from the paper: tool uptake varies by
+  checkpoint — measure, don't assume.)
+- **A6. Verify-the-new-state rule in the loop** (v7 lesson, now literature-
+  backed): grader-style self-check step before final — "show the NEW symbol
+  exists", not just "the old one is gone".
+
+### Track B — FlashMini Ultra training path (Phase 6, now concrete)
+
+- **B1. Recipe (validated by four independent 2026 efforts).** SFT on
+  verified trajectories → GRPO/RLVR with executable verifiers → inspect
+  failures → resynthesize tasks. Our agentbench graders ARE RLVR verifiers
+  (tests pass, grader outcome, valid tool-call JSON — exactly the reward
+  class NVIDIA's guide recommends).
+- **B2. Data.** Three validated sources: (a) our own verified agent traces
+  (already collecting via bench JSONs); (b) MiniCPM5-2B released 500K agent
+  SFT + 80K RL samples; (c) FrogNano-style synthetic tasks (arXiv:2609.07925:
+  a 4B agent trained *only* on ~1,500 synthetic SWE environments, no
+  distillation, beats larger models).
+- **B3. Curriculum = learnability frontier.** FrogNano's key result: generate
+  tasks at the current checkpoint's ~30–70% success band; refresh as the
+  model improves. Our Task fixture generator is the seed of this pipeline.
+- **B4. Overfit-first validation (Arctic-SWE, Snowflake 2026-10).** "If the
+  pipeline can't overfit 160 solvable tasks, don't trust it on 20,000."
+  Adopt as our training-pipeline smoke test before any scale-up.
+- **B5. Anti-loop reward shaping.** SWE-Protégé penalizes degenerate loops
+  and unproductive help-seeking in the RL reward — port our v6/v8 loop
+  guards into reward terms at training time.
+- **B6. Compute.** HF Jobs GPU (TRL/Unsloth GRPO) or Kaggle 30 h/week T4×2.
+  Arctic-SWE needed 8×B200 for full RL at 4B; our scope: QLoRA SFT on
+  curated traces + small-scale GRPO on frontier-of-learnability synthetic
+  tasks — the FrogNano result shows small-scale synthetic-only works.
+- **B7. On-policy distillation flywheel (MiniCPM5 recipe).** Frontier teacher
+  (NIM endpoint, user key pending) solves our failed tasks → verified
+  solutions enter the SFT set → distill back into FlashMini.
+
+### Track C — Base-model candidates to bench head-to-head (ours = Qwen3.5-4B)
+
+All llama.cpp-ready, all fit our RAM envelope at Q4-class quants:
+
+| candidate | headline (vendor) | why it matters for us | risk |
+|---|---|---|---|
+| **Spark-X2.6-4B** (2026-10-20) | SWE-bench Verified 62.8, SWE Pro 54.3, BFCL-v4 71.8, IFEval 93.6 | best published 4B agentic-coding scores; post-training-focused release | community GGUF only; DSpark-GGUF speculative variant exists |
+| **Nemotron Dory 1.0 4B** (2026-10-16) | SWE-bench Verified 59.5 @ 2 loops | *looped* arch: one 4B checkpoint, 1/2/4 loops = speed/accuracy dial at inference; official NVIDIA GGUF | novel arch — llama.cpp loop support maturity unknown; needs bench |
+| **MiniCPM5-2B** (2026-09-07) | SWE-bench Verified 46.4 as a **2B**; LiveCodeBench 69.1 | smaller+faster than our 4B with 4B-class scores → RAM headroom for context; official GGUF; releases 500K agent SFT data | 2B ceiling on long-horizon tasks unknown |
+
+Decision gate (unchanged): our own 13/18-task agentbench score + tok/s + RSS
+gates — vendor numbers only seed the queue. Qwen3.6 has no 4B dense (35B-A3B
+MoE only), so Qwen3.5-4B stays our incumbent.
+
+### Priority order (impact × feasibility on this device)
+
+1. A1 MTP re-sweep + A2 TurboQuant KV trial (hours, big context/RAM upside)
+2. A3+A6 loop: stall-budget warnings + verify-new-state enforcement (v10)
+3. A4 memory management for 4k context (v11; largest published delta)
+4. A5 symbol-graph tool (v12; largest published tool delta at 4B)
+5. C base-model bake-off: download Q4 GGUFs of the 3 candidates when disk
+   allows (~2.5–4 GiB each; 1.2 GiB free now — needs cleanup round first)
+6. B1–B6 FlashMini Ultra once NIM key lands (teacher) + GPU window (Kaggle/HF Jobs)
+
+### Sources
+
+- MiniCPM5-2B release & data: aimodeling.com (2026-09-07); openbmb/MiniCPM5-2B-GGUF
+- Dory 1.0 4B: hokai.io/hub/models/nemotron-labs-dory-1.0-4b; nvidia/NVIDIA-Nemotron-Labs-Dory1.0-4B-GGUF
+- Spark-X2.6-4B: dev.to/sparkllm (2026-10-20); benchlm.ai/models/spark-x2-6-4b; XHToken/Spark-X2.6-4B-GGUF
+- FrogNano (synthetic-only 4B agent): arXiv:2609.07925
+- SWE-Protégé (anti-loop RL, expert collaboration): arXiv:2602.22124
+- SWE-MeM (memory management, 4B 7.0→43.4 SWE-V): arXiv:2606.28434
+- Code-graph tools at small scale (2× localization at 1.7–4B): arXiv:2610.33958
+- Arctic-SWE recipe + overfit test (Qwen3.5-4B 47.4→65.0): snowflake.com blog 2026-10-23
+- GRPO/RLVR workflow + agent training in TRL: NVIDIA developer blog 2026-07-01; TRL GRPO docs
+- MTP depth tuning: unsloth.ai/docs/models/mtp; TurboQuant KV: llama.cpp discussion #20969
