@@ -12,7 +12,7 @@ The deterministic tool layer, the local-model runtime, and the agent loop that d
 | 1.1 | Environment foundation (uv, pytest, ruff, pyright, CI) | Done — CI green |
 | 1.2 | Tool layer: 8 tools, normalized envelope, workspace jail, atomic patching | Done — 64 tests, smoke 10/10 |
 | 1.3 | Model benchmark (Qwen3.5-4B vs Nanbeige4.2-3B vs Nemotron-Bolt) | **Done — winner: Qwen3.5-4B MTP, 4.2 tok/s, all gates pass** (`docs/decisions.md`) |
-| 2 | Agent loop + CLI | In progress — runtime + agent loop + CLI landed; AgentBench v0 rounds: 7/8 → **8/8 → 8/8**; v1 hard-core suite probe loop: 3/5 → **5/5**; live smoke passes |
+| 2 | Agent loop + CLI | In progress — runtime + agent loop + CLI landed; AgentBench v0 rounds: 7/8 → **8/8 → 8/8**; v1 hard-core suite: 3/5 → **5/5**; 13-task round 5: **13/13**; 18-task v2 suite first exposure 3/5 → **5/5** after v10 guards + prompt reorder |
 
 The agent loop now exists and drives the tool layer end-to-end: the model
 must answer with exactly one JSON object per turn (a tool call or a final
@@ -51,7 +51,7 @@ Properties that are tested, not assumed:
 ## Verify it yourself
 
 ```sh
-make check        # ruff + format check + pyright + 119 tests
+make check        # ruff + format check + pyright + 129 tests
 make smoke        # dogfoods all 8 tools against this repository
 make smoke-agent  # live: the real model drives the agent loop (slow, minutes)
 ```
@@ -74,7 +74,14 @@ The first full 13-task round scored 12/13; two probe iterations later the
 loop-level guards (successful-repeat warning, unseen-identifier guard,
 no-op-write detection) closed the last gap and round 5 scored
 **13/13 (100%)** — see `decisions.md` for the v1→v8 iteration story.
-The CLI now ships the first workflows: `flashmini run "<task>"` and
+The suite then expanded to 18 tasks (refactor-sig, debug-cross,
+implement-spec, config-recovery, pipeline) probing axes the original
+suite never touched: signature redesigns, cause-not-symptom debugging,
+spec-first implementation, config-only repair, and test-free data
+transforms. The first exposure scored 3/5; loop-level non-consecutive
+repeat guards plus a prompt-structure overhaul (rules before the tool
+list, per the prompt-master checklist) flipped both failures 2/2 on
+re-probe. The CLI now ships the first workflows: `flashmini run "<task>"` and
 `flashmini fix` (fix a failing test), with live step output.
 
 The engineering plan for how a 4B local agent competes with models 100x

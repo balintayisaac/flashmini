@@ -241,3 +241,81 @@ grep, typo-hunt fixes via stem-then-copy in 127 s, and typo-hunt's wall
 time under RAM pressure fell from 871 s (v7 probe) to 127 s. The v1 hard
 suite that started at 3/5 is now fully absorbed into a saturated
 13/13 suite.
+
+## AgentBench v2 suite — capability expansion and loop enforcement (2026-11-01)
+
+With the 13-task suite saturated (rounds 5: 13/13 twice), five new tasks
+probe capability axes the suite never touched:
+
+1. **refactor-sig** — rename `conv(temp_c, offset)` to
+   `celsius_to_fahrenheit(temp_c)` and bake the offset into the body;
+   callers in two other files. A signature redesign, not a text rename.
+2. **debug-cross** — the cause lives in one file, the symptom in another;
+   the task names the symptom file and forbids touching it. The grade
+   rejects any change to the symptom file or tests (byte-identical).
+3. **implement-spec** — write a `slugify` function from a written SPEC.md
+   against pre-written tests; the file to create does not exist yet.
+4. **config-recovery** — a broken config file (case-sensitive section,
+   non-numeric port, wrong boolean) must be fixed by editing only the
+   config; the code and tests are byte-identical graded.
+5. **pipeline** — CSV → filtered/sorted JSON by hand, no tests to lean on;
+   the grade parses the output and compares exactly.
+
+First live exposure (probe, 5 tasks): **3/5**. debug-cross, config-recovery
+and pipeline passed first try (the model even abused run_tests to execute a
+`python -c` directory listing to locate config.ini — creative tool use).
+Two failures shared one root cause pattern: **the loop's guards only fired
+on consecutive repeats**, and any interleaved call reset them. The model
+no-op-wrote the same refactor content four times (interleaved with reads),
+and read a nonexistent file it was supposed to *create* ten times.
+
+v10 — enforcement moves into the loop (TDD, 128 tests):
+
+1. Per-run counters replace consecutive checks: an identical call failing
+   twice (calls in between don't reset), an identical call succeeding three
+   times with identical results, and two no-op writes of the same content
+   to the same file each trigger a warning that names the escape route
+   ("treat this file as done; run the tests or grep the names the task
+   asks you to change, and edit those files").
+2. read_file's not-found hint now says: if the task asks you to create
+   this file, write it with write_file.
+3. The same test run exposed and fixed a real determinism bug: a
+   same-second, same-size fixture edit could leave a stale .pyc and fail
+   pytest spuriously — the bench now runs pytest with
+   PYTHONDONTWRITEBYTECODE=1.
+
+The user then pointed at the prompt-master skill (nidhinjs/prompt-master)
+and asked for it to be applied to FlashMini's own prompts. Its checklist
+flagged exactly what the traces showed: FlashMini's hard-won rules sat at
+the END of the system prompt (attention decay), task verbs were vague for
+creation tasks, and multi-file work lacked anchors. Applied with TDD (a
+structure test pins that the rules precede the tool list, most-violated
+first):
+
+1. System prompt: all rules now precede the tool list; repeat-guard and
+   identifier-spelling rules first.
+2. refactor-sig: "Callers of conv exist in other files: find them with
+   grep and update every one so all tests pass."
+3. implement-spec: "create the file app/slug.py" + explicit "run the tests
+   and make sure they pass".
+
+Verification probe (the two previously failing tasks): **2/2**.
+refactor-sig: found both callers, rewrote all three files, ran the tests —
+270.8 s. implement-spec: created slug.py immediately, failed its own test
+run once, rewrote with the right approach, passed — 225.3 s, zero
+nonexistent-file reads. The v2 capability suite is effectively 5/5 with
+both fixes live-verified.
+
+Full-suite round 6 — all 18 tasks, first complete run of the expanded
+suite (run through the crash-safe `round.sh` driver, which committed the
+results JSON automatically): **18/18 (100%)**, ~34 min of task wall time.
+Per task (s): qa-read 55.5, find-symbol 16.8, find-text 21.4, fix-test
+93.4, patch-update 63.7, proto-read 15.6, proto-grep 37.5, proto-test
+16.5, bug-hunt 111.2, multi-file 274.6, adapt-recovery 165.8, write-test
+123.1, typo-hunt 88.5, refactor-sig 199.3, debug-cross 206.8,
+implement-spec 278.9, config-recovery 219.7, pipeline 68.6. Two
+comparisons worth recording: typo-hunt fell from 871.5 s (v7-probe
+failure) to 88.5 s across three fix generations, and fix-test fell from
+194.2 s (round 5) to 93.4 s with the v10 guards active. The suite that
+started as 8 tasks at 7/8 now stands at 18 tasks, 18/18, with every fix
+from v1 through v10 live-verified on the recorded runs.
