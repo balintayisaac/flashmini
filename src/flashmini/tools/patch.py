@@ -21,6 +21,7 @@ changes on disk.
 
 from __future__ import annotations
 
+import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -183,6 +184,48 @@ def _find_block(lines: list[str], block: list[str], start_at: int) -> tuple[int,
     return None
 
 
+_DISPLAY_PREFIX_RE = re.compile(r"^\s*\d+[\t:]\s?")
+
+
+def _mismatch_hint(lines: list[str], hunk: Hunk) -> str:
+    """Explain a failed hunk match: display artifacts and nearest raw content."""
+    parts: list[str] = []
+    old_texts = [text for prefix, text in hunk.lines if prefix in (" ", "-")]
+    if any(_DISPLAY_PREFIX_RE.match(text) for text in old_texts):
+        parts.append(
+            "The hunk contains read_file display formatting (line numbers/tabs); "
+            "write ONLY the raw file text."
+        )
+    probe = old_texts[0] if old_texts else ""
+    candidates = [probe.strip()]
+    if _DISPLAY_PREFIX_RE.match(probe):
+        candidates.insert(0, _DISPLAY_PREFIX_RE.sub("", probe).strip())
+    nearest = None
+    for candidate in candidates:
+        if not candidate:
+            continue
+        for idx, line in enumerate(lines):
+            if line.strip() == candidate:
+                nearest = idx
+                break
+        if nearest is not None:
+            break
+    if nearest is not None:
+        lo, hi = max(0, nearest - 1), min(len(lines), nearest + 2)
+        excerpt = "\n".join(f"  {lines[k]!r}" for k in range(lo, hi))
+        parts.append(f"Nearest raw file content:\n{excerpt}")
+        matched = lines[nearest]
+        if probe.strip() and probe.strip() == matched.strip() and probe != matched:
+            lead = len(matched) - len(matched.lstrip())
+            parts.append(
+                f"Leading whitespace differs: the file line has {lead} leading "
+                "space(s); copy it exactly."
+            )
+    elif probe:
+        parts.append(f"First context line received: {probe!r} (not found in the file)")
+    return ("\n" + "\n".join(parts)) if parts else ""
+
+
 def _apply_update(op: FileOp, original: str) -> tuple[str, bool, int, int]:
     """Apply all hunks of one update operation in memory."""
     lines, newline, trailing = _split_lines(original)
@@ -199,6 +242,7 @@ def _apply_update(op: FileOp, original: str) -> tuple[str, bool, int, int]:
             anchor = f" (anchor: {hunk.context!r})" if hunk.context else ""
             raise PatchError(
                 f"hunk does not match {op.path!r}{anchor}: no exact or whitespace-fuzzy match found"
+                + _mismatch_hint(lines, hunk)
             )
         idx, used_fuzz = found
         fuzz = fuzz or used_fuzz

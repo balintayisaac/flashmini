@@ -8,6 +8,7 @@ drops a copy of the previous content into ``.flashmini/backups/`` first.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import tempfile
 import time
@@ -19,6 +20,7 @@ from flashmini.tools.types import ToolResult
 
 BACKUP_ROOT = ".flashmini/backups"
 _BINARY_SAMPLE = 8192
+_DISPLAY_LINE_RE = re.compile(r"^\s*\d+[\t:]")
 
 
 def backup_file(ctx: ToolContext, target: Path) -> Path | None:
@@ -43,6 +45,12 @@ def atomic_write(target: Path, content: str) -> None:
         os.replace(tmp, target)
     finally:
         tmp.unlink(missing_ok=True)
+
+
+def _looks_like_display_copy(content: str) -> bool:
+    """True when content visibly starts with read_file's line-number annotations."""
+    lines = [line for line in content.splitlines() if line.strip()]
+    return sum(1 for line in lines[:3] if _DISPLAY_LINE_RE.match(line)) >= 2
 
 
 def read_file(
@@ -85,7 +93,7 @@ def read_file(
     start = max(start_line, 1)
     end = end_line if end_line is not None else total
     selected = lines[start - 1 : end]
-    numbered = "\n".join(f"{n:>6}\t{line}" for n, line in enumerate(selected, start=start))
+    numbered = "\n".join(f"{n:>6}: {line}" for n, line in enumerate(selected, start=start))
     if not selected:
         hint = f"no lines in the requested range; file has {total} line(s)"
     elif truncated:
@@ -131,6 +139,14 @@ def write_file(
                 next_action_hint="pass create_parents=True to create missing directories",
             )
         target.parent.mkdir(parents=True, exist_ok=True)
+    if _looks_like_display_copy(content):
+        return ToolResult.error(
+            tool,
+            "content looks like read_file display output (line numbers at line start); "
+            "write only the raw file text",
+            duration_ms=elapsed_ms(started),
+            next_action_hint="remove the line-number prefixes from every line and retry",
+        )
     backup_path = backup_file(ctx, target) if backup else None
     atomic_write(target, content)
     output = f"wrote {len(content)} chars to {path}"

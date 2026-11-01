@@ -61,6 +61,8 @@ class TestSchemas:
             assert f"- {name}(" in prompt
         assert '"final"' in prompt
         assert "Patch format for apply_patch" in prompt
+        assert 'Never use the "final" field' in prompt
+        assert "literal file text" in prompt
 
 
 class TestAgentLoop:

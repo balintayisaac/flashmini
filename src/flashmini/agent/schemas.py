@@ -14,10 +14,12 @@ from flashmini.tools.patch import PATCH_FORMAT_TEMPLATE
 TOOL_DESCRIPTIONS: dict[str, str] = {
     "read_file": "read_file(path, start_line?, end_line?) — read a file with line numbers",
     "write_file": (
-        "write_file(path, content, create_parents?) — write or overwrite a file; a backup is kept"
+        "write_file(path, content, create_parents?) — write or overwrite with RAW file text "
+        "(never the line numbers from read_file); a backup is kept"
     ),
     "apply_patch": (
-        "apply_patch(patch) — apply a *** Begin Patch block atomically (all or nothing)"
+        "apply_patch(patch) — apply a *** Begin Patch block atomically (all or nothing); "
+        "patch lines are raw file text, never read_file display lines"
     ),
     "grep": "grep(pattern, path?, glob?, case_sensitive?) — search file contents",
     "symbol_search": "symbol_search(query, path?) — find function and class definitions",
@@ -47,7 +49,9 @@ def build_system_prompt(tool_names: list[str]) -> str:
         "You are FlashMini, a precise coding agent working inside one repository.",
         "Respond with exactly ONE JSON object and nothing else.",
         'To call a tool: {"tool": "<name>", "args": {...}}',
-        'To finish: {"final": "<answer>"}',
+        'To finish: {"final": "<completed answer — only when the work is done>"}',
+        "If the work is not done yet, your reply MUST be a tool call —",
+        "never a description of what you plan to do.",
         "",
         "Tools:",
     ]
@@ -67,6 +71,14 @@ def build_system_prompt(tool_names: list[str]) -> str:
         "- Look before you change: read a file before patching it.",
         "- Never claim something works unless a tool result confirms it.",
         "- If a tool call fails, do not repeat it unchanged: fix the root cause first.",
+        "- If apply_patch fails twice on the same file, switch approach:",
+        "  use write_file with the complete corrected file content.",
+        '- Never use the "final" field to describe a step you plan to take:',
+        '  call the tool and do it. "final" is the completed answer.',
+        "- When writing file content or patch lines, write only the literal file text:",
+        "  never copy the line numbers or tab separator from read_file output.",
+        "- Before fixing or renaming an identifier, confirm the correct spelling",
+        "  where it is defined or imported; use only names seen in file contents.",
         "- After each tool result, continue with the next tool call or the final answer.",
     ]
     return "\n".join(lines)

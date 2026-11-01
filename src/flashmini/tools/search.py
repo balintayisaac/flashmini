@@ -73,7 +73,7 @@ def grep(
     if rg is not None:
         argv = [rg, "--line-number", "--no-heading", "--color", "never"]
         if not case_sensitive:
-            argv.append("--case-insensitive")
+            argv.append("--ignore-case")
         if glob:
             argv.extend(["--glob", glob])
         argv.extend(["--regexp", pattern, str(target)])
@@ -131,7 +131,10 @@ def grep(
     if rg is None:
         hint = _RG_DEGRADED_HINT
     elif not selected:
-        hint = "pattern not found; try a broader regex or a different path"
+        hint = (
+            "pattern not found; retry with a shorter pattern (e.g. just the bare "
+            "identifier), a broader regex, or case_sensitive=false"
+        )
     else:
         hint = None
     return ToolResult.ok(
@@ -195,10 +198,14 @@ def symbol_search(
     results.sort()
     truncated = len(results) > max_results
     output = "\n".join(results[:max_results]) if results else "no symbols found"
+    if results:
+        hint = "python-AST engine; tree-sitter symbol index arrives in Phase 3"
+    else:
+        hint = "no symbols matched; search the bare name (e.g. 'biggest'), not the whole definition"
     return ToolResult.ok(
         tool,
         output,
         duration_ms=elapsed_ms(started),
         truncated=truncated,
-        next_action_hint="python-AST engine; tree-sitter symbol index arrives in Phase 3",
+        next_action_hint=hint,
     )

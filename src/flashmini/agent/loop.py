@@ -8,6 +8,7 @@ envelopes; the loop never lets a crash escape and never retries forever.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -25,6 +26,22 @@ PROTOCOL_REMINDER = (
     'Reply with exactly ONE JSON object: {"tool": "<name>", "args": {...}} '
     'or {"final": "<answer>"}.'
 )
+
+PLANNING_REMINDER = (
+    "That is a plan, not a completed answer. Do the first step NOW by calling a tool: "
+    '{"tool": "<name>", "args": {...}}. Use "final" only for the finished, verified result.'
+)
+
+_PLANNING_RE = re.compile(
+    r"\b(i need to|i will|i[’']ll|let me|i am going to|i[’']m going to|"
+    r"first,? (i|we)|next,? (i|we)|start by|i should|i plan to)\b",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_plan(text: str) -> bool:
+    """Heuristic: text that describes intended steps instead of delivering the result."""
+    return _PLANNING_RE.search(text[:200]) is not None
 
 
 @dataclass
@@ -109,6 +126,7 @@ class AgentLoop:
         run = AgentRun(task=task, final=None, finished=False, steps=[])
         last_fail_sig: str | None = None
         repeat_count = 0
+        patch_failures = 0
 
         for index in range(self.max_steps):
             raw = self.client.chat_text(
@@ -128,6 +146,13 @@ class AgentLoop:
 
             final = data.get("final")
             if isinstance(final, str) and final.strip():
+                if _looks_like_plan(final):
+                    step = Step(index=index, kind="protocol", raw=raw)
+                    run.steps.append(step)
+                    self._notify(on_step, step)
+                    messages.append({"role": "assistant", "content": raw})
+                    messages.append({"role": "user", "content": PLANNING_REMINDER})
+                    continue
                 step = Step(index=index, kind="final", raw=raw)
                 run.steps.append(step)
                 self._notify(on_step, step)
@@ -156,11 +181,19 @@ class AgentLoop:
             else:
                 repeat_count = 0
             last_fail_sig = signature if result.status is not ToolStatus.OK else None
+            if tool == "apply_patch":
+                patch_failures = 0 if result.status is ToolStatus.OK else patch_failures + 1
             message = "Tool result:\n" + envelope_message(result)
             if repeat_count >= 1:
                 message = (
                     f"WARNING: identical call already failed {repeat_count} time(s). "
                     "Do not repeat it; change the arguments or the approach.\n" + message
+                )
+            if patch_failures >= 2:
+                message = (
+                    f"apply_patch has failed {patch_failures} times against different "
+                    "arguments; switch approach: use write_file with the complete "
+                    "corrected file content.\n" + message
                 )
             messages.append({"role": "user", "content": message})
 

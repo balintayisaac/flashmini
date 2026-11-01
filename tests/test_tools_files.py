@@ -8,8 +8,8 @@ def test_write_read_roundtrip(ctx: ToolContext) -> None:
     assert written.status is ToolStatus.OK
     read = read_file(ctx, "note.txt")
     assert read.status is ToolStatus.OK
-    assert "1\thello" in read.output
-    assert "2\tworld" in read.output
+    assert "1: hello" in read.output
+    assert "2: world" in read.output
 
 
 def test_overwrite_creates_backup(ctx: ToolContext) -> None:
@@ -54,8 +54,8 @@ def test_read_directory_listing(ctx: ToolContext) -> None:
 def test_read_line_range(ctx: ToolContext) -> None:
     write_file(ctx, "lines.txt", "one\ntwo\nthree\nfour\n")
     result = read_file(ctx, "lines.txt", start_line=2, end_line=3)
-    assert "2\ttwo" in result.output
-    assert "3\tthree" in result.output
+    assert "2: two" in result.output
+    assert "3: three" in result.output
     assert "one" not in result.output
 
 
@@ -65,3 +65,16 @@ def test_write_requires_parents_flag(ctx: ToolContext) -> None:
     created = write_file(ctx, "deep/nested/file.txt", "x", create_parents=True)
     assert created.status is ToolStatus.OK
     assert (ctx.workspace / "deep" / "nested" / "file.txt").read_text() == "x"
+
+
+def test_write_rejects_display_copy(ctx: ToolContext) -> None:
+    copied = "     1\talpha\n     2\tbeta\n"
+    result = write_file(ctx, "copied.txt", copied)
+    assert result.status is ToolStatus.ERROR
+    assert "display" in result.output
+    assert not (ctx.workspace / "copied.txt").exists()
+
+
+def test_write_allows_single_numbered_line(ctx: ToolContext) -> None:
+    result = write_file(ctx, "note.txt", "42: the answer\n")
+    assert result.status is ToolStatus.OK
