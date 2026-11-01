@@ -202,3 +202,42 @@ identical consecutive *successful* calls (same signature and same output)
 and warns "you already ran this exact call and got the same result — act on
 the result you have, or change strategy". Output comparison keeps
 legitimate verify-after-edit re-runs unflagged. (112 → 114 tests.)
+
+The v6 live probe then failed with a *second* new mode (0/1, 944 s under
+RAM pressure): the model's case-insensitive grep `frobnicate` matches
+FROBNICATER but never FROBNICATOR (they differ at the 10th character), so
+it never saw the correct spelling anywhere — and concluded its own search
+pattern was the real name, writing `value = frobnicate`. A prompt rule
+("check where the name is actually defined") was already in the task text
+and was ignored. v7 added the same teaching at three surfaces (system
+prompt, write_file description, task text). The v7 probe failed too, with
+the trace proving the point: the model no-op-wrote the old name back
+("wrote 20 chars" read as success), invented a name, verified only that
+the OLD name was gone, and declared victory. Conclusion recorded for the
+project: **for a 4B model under load, prompt-surface rules do not hold;
+tool-result warnings do** (v4 whitespace hints, v5 hint reorder both
+flipped outcomes). So enforcement moved into the loop — v8:
+
+1. Unseen-name guard: the loop accumulates a vocabulary from the task text
+   plus every tool result; a modification of an *existing* file containing
+   identifiers that never appeared anywhere gets a corrective warning
+   ("grep a shorter stem … copy the exact form from file contents"). New
+   file creation is exempt (backup-marker detection); names the task
+   itself mentions are exempt (protects legitimate renames).
+2. No-op write detection: `write_file` with content identical to the
+   existing file returns "your write changed nothing" instead of a fake
+   success — the exact trap the v7 probe fell into.
+
+The v8 verification probe passed, and the trace is the designed behavior:
+stem grep `frob` case-insensitive at step 1 surfaced FROBNICATOR in a.py
+and b.py immediately; the model copied the exact form from file contents
+and verified both directions (new name present, old name gone). The guards
+were armed but not even needed — the v7 stem rule finally took.
+
+Full-suite round 5 (13 tasks, same configuration): **13/13 (100%)**,
+~16.6 min total wall time. Every fix from v1 through v8 is verified live:
+v0 protocol checks pass, multi-file renames cleanly via bare-identifier
+grep, typo-hunt fixes via stem-then-copy in 127 s, and typo-hunt's wall
+time under RAM pressure fell from 871 s (v7 probe) to 127 s. The v1 hard
+suite that started at 3/5 is now fully absorbed into a saturated
+13/13 suite.

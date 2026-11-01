@@ -51,7 +51,7 @@ Properties that are tested, not assumed:
 ## Verify it yourself
 
 ```sh
-make check        # ruff + format check + pyright + 112 tests
+make check        # ruff + format check + pyright + 119 tests
 make smoke        # dogfoods all 8 tools against this repository
 make smoke-agent  # live: the real model drives the agent loop (slow, minutes)
 ```
@@ -70,6 +70,10 @@ The suite then grew to 13 tasks; the five-task hard core (bug-hunt,
 multi-file, adapt-recovery, write-test, typo-hunt) went 3/5 → 3/5 → **5/5**
 across five probe runs, each failure driving a product fix (teaching patch
 errors, display-format detection, bare-identifier grep hints, step budget).
+The first full 13-task round scored 12/13; two probe iterations later the
+loop-level guards (successful-repeat warning, unseen-identifier guard,
+no-op-write detection) closed the last gap and round 5 scored
+**13/13 (100%)** — see `decisions.md` for the v1→v8 iteration story.
 The CLI now ships the first workflows: `flashmini run "<task>"` and
 `flashmini fix` (fix a failing test), with live step output.
 
