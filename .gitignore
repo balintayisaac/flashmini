@@ -35,3 +35,6 @@ vendor/
 .idea/
 *.swp
 .DS_Store
+
+# bench round driver logs (results JSONs are committed; stdout logs are not)
+bench/results/*.log
