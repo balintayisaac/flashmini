@@ -12,7 +12,7 @@ The deterministic tool layer, the local-model runtime, and the agent loop that d
 | 1.1 | Environment foundation (uv, pytest, ruff, pyright, CI) | Done — CI green |
 | 1.2 | Tool layer: 8 tools, normalized envelope, workspace jail, atomic patching | Done — 64 tests, smoke 10/10 |
 | 1.3 | Model benchmark (Qwen3.5-4B vs Nanbeige4.2-3B vs Nemotron-Bolt) | **Done — winner: Qwen3.5-4B MTP, 4.2 tok/s, all gates pass** (`docs/decisions.md`) |
-| 2 | Agent loop + CLI | In progress — runtime + agent loop + CLI landed; AgentBench v0 rounds: 7/8 → **8/8 → 8/8**; live smoke passes |
+| 2 | Agent loop + CLI | In progress — runtime + agent loop + CLI landed; AgentBench v0 rounds: 7/8 → **8/8 → 8/8**; v1 hard-core suite probe loop: 3/5 → **5/5**; live smoke passes |
 
 The agent loop now exists and drives the tool layer end-to-end: the model
 must answer with exactly one JSON object per turn (a tool call or a final
@@ -51,7 +51,7 @@ Properties that are tested, not assumed:
 ## Verify it yourself
 
 ```sh
-make check        # ruff + format check + pyright + 96 tests
+make check        # ruff + format check + pyright + 112 tests
 make smoke        # dogfoods all 8 tools against this repository
 make smoke-agent  # live: the real model drives the agent loop (slow, minutes)
 ```
@@ -66,6 +66,10 @@ tasks — read, search, patch, fix-test) scores the live agent end-to-end on
 the winning model (Qwen3.5-4B MTP under `llama-server` with prompt caching
 and `--spec-type draft-mtp --spec-draft-n-max 2`). Rounds: 7/8 → 8/8 → 8/8
 — every weakness found gets fixed and re-measured, and the score repeats.
+The suite then grew to 13 tasks; the five-task hard core (bug-hunt,
+multi-file, adapt-recovery, write-test, typo-hunt) went 3/5 → 3/5 → **5/5**
+across five probe runs, each failure driving a product fix (teaching patch
+errors, display-format detection, bare-identifier grep hints, step budget).
 The CLI now ships the first workflows: `flashmini run "<task>"` and
 `flashmini fix` (fix a failing test), with live step output.
 

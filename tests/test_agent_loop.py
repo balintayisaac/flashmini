@@ -122,6 +122,33 @@ class TestAgentLoop:
         third_request = client.requests[2][-1]["content"]
         assert "WARNING: identical call already failed" in third_request
 
+    def test_repeated_successful_call_gets_warning(self, tmp_path: Path) -> None:
+        """Round 4 typo-hunt: 5 identical successful greps in a row, no progress."""
+        (tmp_path / "a.txt").write_text("hello world\n")
+        call = '{"tool": "read_file", "args": {"path": "a.txt"}}'
+        client = FakeClient([call, call, '{"final": "acted"}'])
+        run = AgentLoop(_registry(tmp_path), client).run("read twice")
+        assert run.finished is True
+        third_request = client.requests[2][-1]["content"]
+        assert "same result" in third_request
+        assert "act on the result you have" in third_request
+
+    def test_state_changing_repeat_gets_no_warning(self, tmp_path: Path) -> None:
+        """Legitimate verify-after-edit re-runs must not be flagged."""
+        (tmp_path / "a.txt").write_text("before\n")
+        client = FakeClient(
+            [
+                '{"tool": "read_file", "args": {"path": "a.txt"}}',
+                '{"tool": "write_file", "args": {"path": "a.txt", "content": "after\\n"}}',
+                '{"tool": "read_file", "args": {"path": "a.txt"}}',
+                '{"final": "done"}',
+            ]
+        )
+        run = AgentLoop(_registry(tmp_path), client).run("edit then reread")
+        assert run.finished is True
+        last_request = client.requests[3][-1]["content"]
+        assert "same result" not in last_request
+
     def test_protocol_violation_gets_reminder_then_recovers(self, tmp_path: Path) -> None:
         client = FakeClient(["just some prose", '{"final": "ok"}'])
         run = AgentLoop(_registry(tmp_path), client).run("task")

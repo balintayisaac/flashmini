@@ -150,3 +150,55 @@ Round 3 repeated the suite on the same configuration — 8/8 again, same tool
 sequences, 18–108 s per task: the fixes hold and the score repeats.
 The frontier/other-model comparison column in this table is produced via
 `--base-url` against an OpenAI-compatible endpoint (dev-side; pending key).
+
+## AgentBench v1 suite — harder tasks, probe loop 3/5 → 5/5 (2026-10-31 → 11-01)
+
+Once v0 saturated at 8/8, the suite grew to 13 tasks. Five of them
+(bug-hunt, multi-file, adapt-recovery, write-test, typo-hunt) form the v1
+hard core: multi-step work that must actually find and repair things.
+Probe runs use `--only` on these five; each probe is a full live run on the
+same winning model configuration.
+
+| probe | score | what the failures taught |
+|---|---|---|
+| 1 (161913) | 3/5 | typo-hunt: model never tried case-insensitive grep |
+| 2 (164231) | 2/5 | model copied read_file display format into patches |
+| 3 (171015) | 2/5 | patch tool needed to teach, not just reject |
+| 4 (183500) | 3/5 | both FAILs were step-cap misses: 5 over-specific greps (multi-file), one step short after finding the answer (typo-hunt) |
+| 5 (085426) | **5/5 (100%)** | both former FAILs pass; see v5 below |
+
+Fixes v1→v5 — every one a product gap a probe exposed:
+
+1. Prompt rules: planning text is never a final answer; patches carry literal
+   raw file text (not the read_file display format); verify identifier
+   spelling before patching; after two failed `apply_patch` calls, switch to
+   `write_file`.
+2. `apply_patch` errors teach: detect display-formatted hunks, show the
+   nearest raw file content, and name exactly which line's leading
+   whitespace differs.
+3. `read_file` shows `'     1: text'` (display format), and `write_file`
+   rejects display-copy content while pointing at the fix.
+4. `grep` argv uses the real `--ignore-case` flag (was silently ignored);
+   the no-match hint leads with "retry with a shorter pattern (e.g. just
+   the bare identifier)" because over-specific patterns burn more steps
+   than case sensitivity does.
+5. The loop warns after two failed patch attempts; the bench step budget
+   rose 8 → 12 (8 truncated legitimate multi-file work — both probe-4
+   failures were budget misses, not wrong answers).
+
+Probe 5 evidence the loop works: multi-file found both files with a single
+bare-identifier grep (probe 4 needed five greps and still ran out of
+steps); typo-hunt followed the reordered hint (shorter pattern + case
+insensitive) to the correct spelling and fixed it with two steps to spare.
+
+Full-suite round 4 (13 tasks, 12-step budget): **12/13 (92%)** — every v0
+task and 4 of 5 hard tasks passed; typo-hunt regressed (passed probe 5,
+failed here) with a *new* failure mode: the model made the identical
+successful grep (`frobnicate`, case-insensitive) seven times — five in a
+row — each returning the same c.py match, and never wrote the fix. The
+existing repeat guard only fires on failed calls; a successful-but-
+no-progress loop never triggered anything. Fix v6: the loop now also tracks
+identical consecutive *successful* calls (same signature and same output)
+and warns "you already ran this exact call and got the same result — act on
+the result you have, or change strategy". Output comparison keeps
+legitimate verify-after-edit re-runs unflagged. (112 → 114 tests.)

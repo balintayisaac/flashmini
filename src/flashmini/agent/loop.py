@@ -127,6 +127,9 @@ class AgentLoop:
         last_fail_sig: str | None = None
         repeat_count = 0
         patch_failures = 0
+        last_ok_sig: str | None = None
+        last_ok_output: str | None = None
+        ok_repeat_count = 0
 
         for index in range(self.max_steps):
             raw = self.client.chat_text(
@@ -181,9 +184,23 @@ class AgentLoop:
             else:
                 repeat_count = 0
             last_fail_sig = signature if result.status is not ToolStatus.OK else None
+            ok_output = result.output if result.status is ToolStatus.OK else None
+            if ok_output is not None and signature == last_ok_sig and ok_output == last_ok_output:
+                ok_repeat_count += 1
+            else:
+                ok_repeat_count = 0
+            last_ok_sig = signature if ok_output is not None else None
+            last_ok_output = ok_output
             if tool == "apply_patch":
                 patch_failures = 0 if result.status is ToolStatus.OK else patch_failures + 1
             message = "Tool result:\n" + envelope_message(result)
+            if ok_repeat_count >= 1:
+                message = (
+                    "WARNING: you already ran this exact call and got the same "
+                    "result. Repeating it adds nothing new — act on the result "
+                    "you have (make the edit or give the answer), or change "
+                    "strategy.\n" + message
+                )
             if repeat_count >= 1:
                 message = (
                     f"WARNING: identical call already failed {repeat_count} time(s). "
