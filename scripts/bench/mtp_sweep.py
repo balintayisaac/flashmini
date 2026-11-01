@@ -52,8 +52,10 @@ def check_clear() -> None:
             )
 
 
-def start_server(depth: int) -> subprocess.Popen:
+def start_server(depth: int, cache_type: str) -> subprocess.Popen:
     args = [str(SERVER), "-m", str(MODEL), *BASE_ARGS]
+    if cache_type != "f16":
+        args += ["-ctk", cache_type, "-ctv", cache_type]
     if depth > 0:
         args += ["--spec-type", "draft-mtp", "--spec-draft-n-max", str(depth)]
     return subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -108,8 +110,8 @@ def stop_server(proc: subprocess.Popen) -> None:
     time.sleep(3.0)  # let the kernel reclaim before the next load
 
 
-def measure_depth(depth: int, warmup_done: bool) -> dict:
-    proc = start_server(depth)
+def measure_depth(depth: int, cache_type: str, warmup_done: bool) -> dict:
+    proc = start_server(depth, cache_type)
     try:
         wait_healthy(proc)
         if not warmup_done:
@@ -124,6 +126,7 @@ def measure_depth(depth: int, warmup_done: bool) -> dict:
         rss = peak_rss_kb(proc.pid)
         return {
             "depth": depth,
+            "cache_type": cache_type,
             "tok_s_median": round(statistics.median(rates), 3),
             "tok_s_all": rates,
             "peak_rss_gib": round(rss / 1024 / 1024, 3),
@@ -135,30 +138,41 @@ def measure_depth(depth: int, warmup_done: bool) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--depths", default="0,1,2,3,4,6", help="comma list; 0 = no MTP")
+    ap.add_argument(
+        "--cache-types",
+        default="f16",
+        help="comma list of KV cache types to sweep (e.g. f16,q8_0)",
+    )
     args = ap.parse_args()
     depths = [int(d) for d in args.depths.split(",")]
+    cache_types = [c for c in args.cache_types.split(",") if c]
 
     check_clear()
     if not MODEL.exists():
         raise SystemExit(f"model not found: {MODEL}")
 
     results = []
-    for i, depth in enumerate(depths):
-        label = "baseline (MTP off)" if depth == 0 else f"n_max={depth}"
-        print(f"[mtp_sweep] depth {label} ...", flush=True)
-        row = measure_depth(depth, warmup_done=(i == 0))
-        results.append(row)
-        print(
-            f"[mtp_sweep]   {row['tok_s_median']} tok/s "
-            f"(runs {row['tok_s_all']}), RSS {row['peak_rss_gib']} GiB",
-            flush=True,
-        )
+    first = True
+    for depth in depths:
+        for cache_type in cache_types:
+            label = "baseline (MTP off)" if depth == 0 else f"n_max={depth}"
+            label += f" kv={cache_type}"
+            print(f"[mtp_sweep] depth {label} ...", flush=True)
+            row = measure_depth(depth, cache_type, warmup_done=first)
+            first = False
+            results.append(row)
+            print(
+                f"[mtp_sweep]   {row['tok_s_median']} tok/s "
+                f"(runs {row['tok_s_all']}), RSS {row['peak_rss_gib']} GiB",
+                flush=True,
+            )
 
     out = {
         "tool": "mtp_sweep",
         "date": datetime.now(UTC).isoformat(timespec="seconds"),
         "model": MODEL.name,
         "server_args": BASE_ARGS,
+        "cache_types": cache_types,
         "n_predict": N_PREDICT,
         "results": results,
     }

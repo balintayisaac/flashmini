@@ -363,3 +363,21 @@ the bench harness, smoke script, STATUS.md and frontier-plan.md (A1 marked
 done). Absolute numbers this session sit below Phase 1.3's table (3.6–4.2
 vs 4.2 tok/s) — the box is under RAM pressure from an external ollama
 runner; the *relative* comparison is the evidence, not the absolutes.
+
+### A1 follow-up: KV quantization at production depth 1 (2026-11-01)
+
+With `--spec-draft-n-max 1` now production, the KV sweep was re-run at
+that depth (`mtp-sweep-20261101-175517.json`, 3 completions each):
+
+| KV cache | tok/s (median) | peak RSS |
+|---|---|---|
+| f16 (production) | **4.035** | 4.836 GiB |
+| q8_0 | 3.735 (−7.4%) | 4.776 GiB |
+| q4_0 | 3.689 (−8.6%) | 4.743 GiB |
+
+Verdict: f16 stays. At context 4096 the KV quantization saves 60–93 MiB
+— negligible next to the 4.8 GiB weights+KV footprint — while costing
+7–9% generation speed (direction confirmed from the earlier −15% at
+depth 2). KV quantization becomes interesting only if the context moves
+to 8k+, where KV bytes dominate the marginal RSS; that decision is
+deferred to the 8k-context experiment.

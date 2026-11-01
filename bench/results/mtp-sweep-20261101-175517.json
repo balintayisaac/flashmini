@@ -1,0 +1,56 @@
+{
+  "tool": "mtp_sweep",
+  "date": "2026-11-01T09:55:17+00:00",
+  "model": "Qwen3.5-4B-MTP-UD-Q4_K_XL.gguf",
+  "server_args": [
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "47901",
+    "-t",
+    "4",
+    "-c",
+    "4096"
+  ],
+  "cache_types": [
+    "f16",
+    "q8_0",
+    "q4_0"
+  ],
+  "n_predict": 128,
+  "results": [
+    {
+      "depth": 1,
+      "cache_type": "f16",
+      "tok_s_median": 4.035,
+      "tok_s_all": [
+        3.544,
+        4.035,
+        4.136
+      ],
+      "peak_rss_gib": 4.836
+    },
+    {
+      "depth": 1,
+      "cache_type": "q8_0",
+      "tok_s_median": 3.735,
+      "tok_s_all": [
+        3.623,
+        3.735,
+        4.051
+      ],
+      "peak_rss_gib": 4.776
+    },
+    {
+      "depth": 1,
+      "cache_type": "q4_0",
+      "tok_s_median": 3.689,
+      "tok_s_all": [
+        3.689,
+        3.824,
+        3.662
+      ],
+      "peak_rss_gib": 4.743
+    }
+  ]
+}
