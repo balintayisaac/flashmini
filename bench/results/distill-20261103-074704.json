@@ -1,0 +1,549 @@
+{
+  "stamp": "2026-11-02T23:47:04+00:00",
+  "endpoint": "https://integrate.api.nvidia.com/v1",
+  "model_note": "teacher: deepseek-ai/deepseek-v4.1-flash (distill batch)",
+  "passed": 0,
+  "total": 8,
+  "results": [
+    {
+      "name": "distill-slugify",
+      "passed": false,
+      "detail": "spec-corpus pytest grade",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 169.6,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 1,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 2,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"start_line\" string=\"false\">1</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"end_line\" string=\"false\">200</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 3,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">slugify</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"case_sensitive\" string=\"false\">false</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 4,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">.</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 5,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"run_tests\">\n\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 6,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"git_ops\">\n<\uff5cDSML\uff5c parameter name=\"op\" string=\"true\">status</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 7,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">tests/test_slugify.py</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 8,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">app/slugify.py</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 9,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">def </\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 10,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">README.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 11,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"git_ops\">\n<\uff5cDSML\uff5c parameter name=\"op\" string=\"true\">log</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"args\" string=\"true\">--stat -3</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        }
+      ]
+    },
+    {
+      "name": "distill-snake_case",
+      "passed": false,
+      "detail": "spec-corpus pytest grade",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 105.0,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 1,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 2,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">.</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 3,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"start_line\" string=\"false\">1</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"end_line\" string=\"false\">100</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 4,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">snake</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 5,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"run_tests\">\n\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 6,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"symbol_search\">\n<\uff5cDSML\uff5c parameter name=\"query\" string=\"true\">snake</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 7,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">def </\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 8,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"git_ops\">\n<\uff5cDSML\uff5c parameter name=\"op\" string=\"true\">status</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 9,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">a</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">.</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 10,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">tests/test_snake_case.py</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 11,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">.</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"glob\" string=\"true\">**/*.py</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        }
+      ]
+    },
+    {
+      "name": "distill-initials",
+      "passed": false,
+      "detail": "spec-corpus pytest grade",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 103.1,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 1,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 2,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"start_line\" string=\"false\">1</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"end_line\" string=\"false\">100</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 3,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"git_ops\">\n<\uff5cDSML\uff5c parameter name=\"op\" string=\"true\">status</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 4,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">initials</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"case_sensitive\" string=\"false\">false</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 5,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">./SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 6,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">.</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">.</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 7,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"run_tests\">\n\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 8,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">def </\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 9,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"symbol_search\">\n<\uff5cDSML\uff5c parameter name=\"query\" string=\"true\">initials</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 10,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">spec</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"case_sensitive\" string=\"false\">false</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 11,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">initials</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        }
+      ]
+    },
+    {
+      "name": "distill-mask_secret",
+      "passed": false,
+      "detail": "spec-corpus pytest grade",
+      "tool_calls": 3,
+      "tools_used": [
+        "read_file",
+        "read_file",
+        "run_tests"
+      ],
+      "wall_s": 104.7,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {},
+          "status": "error",
+          "output": "invalid arguments: read_file() missing 1 required positional argument: 'path'",
+          "hint": "check the tool's parameters and retry"
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "SPEC.md"
+          },
+          "status": "ok",
+          "output": "     1: # SPEC: mask_secret\n     2: \n     3: Implement `mask_secret(s: str) -> str` in `app/mask_secret.py`:\n     4: \n     5: replace every character except the last four with '*'; inputs of four or fewer characters are entirely masked.\n     6: \n     7: Examples:\n     8: \n     9: - '1234567890' -> '******7890'\n    10: - 'abc' -> '***'\n    11: - '' -> ''",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\", \"args\": {\"pattern\": \"mask_secret\", \"path\": \".\"}}"
+        },
+        {
+          "index": 3,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"args\": {\"pattern\": \"mask_secret\", \"path\": \".\"}}"
+        },
+        {
+          "index": 4,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"args\" string=\"false\">{\"pattern\": \"mask_secret\"}</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 5,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"args\" string=\"false\">{\"pattern\": \"mask_secret\", \"path\": \"tests\"}</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 6,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"args\" string=\"false\">{\"pattern\": \"mask\", \"path\": \".\"}</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 7,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"write_file\">\n<\uff5cDSML\uff5c parameter name=\"args\" string=\"false\">{\"path\": \"app/mask_secret.py\", \"content\": \"def mask_secret(s: str) -> str:\\n    \\\"\\\"\\\"Mask all but the last four characters of ``s`` with '*'.\\n\\n    Inputs of four or fewer characters are entirely masked"
+        },
+        {
+          "index": 8,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"run_tests\">\n<\uff5cDSML\uff5c parameter name=\"args\" string=\"false\">{}</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 9,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"run_tests\">\n<\uff5cDSML\uff5c parameter name=\"args\" string=\"false\">{}</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 10,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {
+            "command": "pytest"
+          },
+          "status": "error",
+          "output": "\n==================================== ERRORS ====================================\n__________________ ERROR collecting tests/test_mask_secret.py __________________\nImportError while importing test module '/tmp/opencode/spec-corpus-1793662352/mask_secret/tests/test_mask_secret.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/home/isaacb/.local/share/uv/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+          "hint": "command exited with code 2"
+        },
+        {
+          "index": 11,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"args\" string=\"false\">{\"path\": \"app/mask_secret.py\"}</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        }
+      ]
+    },
+    {
+      "name": "distill-normalize_ws",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 502 from llama-server /chat/completions: {\"type\":\"about:blank\",\"title\":\"Bad Gateway\",\"status\":502,\"detail\":\"Upstream request failed.\"}\n",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.0,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "distill-filename_safe",
+      "passed": false,
+      "detail": "spec-corpus pytest grade",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 105.3,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 1,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 2,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">filename_safe</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 3,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"start_line\" string=\"false\">1</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"end_line\" string=\"false\">200</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 4,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">.</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 5,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"run_tests\">\n\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 6,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"git_ops\">\n<\uff5cDSML\uff5c parameter name=\"op\" string=\"true\">status</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 7,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">def </\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 8,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"start_line\" string=\"false\">1</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"end_line\" string=\"false\">50</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 9,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">SPEC</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 10,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"run_tests\">\n<\uff5cDSML\uff5c parameter name=\"command\" string=\"true\">pytest -q</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 11,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"symbol_search\">\n<\uff5cDSML\uff5c parameter name=\"query\" string=\"true\">filename_safe</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        }
+      ]
+    },
+    {
+      "name": "distill-cap_words",
+      "passed": false,
+      "detail": "spec-corpus pytest grade",
+      "tool_calls": 2,
+      "tools_used": [
+        "read_file",
+        "read_file"
+      ],
+      "wall_s": 70.2,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {},
+          "status": "error",
+          "output": "invalid arguments: read_file() missing 1 required positional argument: 'path'",
+          "hint": "check the tool's parameters and retry"
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "SPEC.md"
+          },
+          "status": "ok",
+          "output": "     1: # SPEC: cap_words\n     2: \n     3: Implement `cap_words(s: str) -> str` in `app/cap_words.py`:\n     4: \n     5: capitalize the first letter of every whitespace-separated word and lowercase the rest of each word; single-space the words.\n     6: \n     7: Examples:\n     8: \n     9: - 'hello world' -> 'Hello World'\n    10: - 'ADA lovelace' -> 'Ada Lovelace'\n    11: - '' -> ''",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\", \"args\": {\"pattern\": \"cap_words\", \"path\": \".\"}}"
+        },
+        {
+          "index": 3,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\", \"args\": {\"pattern\": \"cap_words\", \"path\": \".\"}}"
+        },
+        {
+          "index": 4,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\", \"args\": {\"pattern\": \"cap_words\", \"path\": \".\", \"glob\": \"*.py\"}}"
+        },
+        {
+          "index": 5,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\", \"args\": {\"pattern\": \"cap_words\", \"path\": \"tests\"}}"
+        },
+        {
+          "index": 6,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\", \"args\": {\"pattern\": \"cap_words\"}}"
+        },
+        {
+          "index": 7,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"run_tests\", \"args\": {}}"
+        },
+        {
+          "index": 8,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\", \"args\": {\"pattern\": \"def test\", \"path\": \".\"}}"
+        },
+        {
+          "index": 9,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\", \"args\": {\"pattern\": \"import\", \"path\": \".\"}}"
+        },
+        {
+          "index": 10,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\", \"args\": {\"pattern\": \"test\"}}"
+        },
+        {
+          "index": 11,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"write_file\", \"args\": {\"path\": \"app/cap_words.py\", \"content\": \"def cap_words(s: str) -> str:\\n    return \\\" \\\".join(w[:1].upper() + w[1:].lower() for w in s.split())\\n\", \"create_parents\": true}}"
+        }
+      ]
+    },
+    {
+      "name": "distill-reverse_words",
+      "passed": false,
+      "detail": "spec-corpus pytest grade",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 179.3,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 1,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 2,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">reverse</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"case_sensitive\" string=\"false\">false</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 3,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"start_line\" string=\"false\">1</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"end_line\" string=\"false\">100</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 4,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">reverse_words</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 5,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 6,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">.</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">SPEC.md</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 7,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">def </\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 8,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"git_ops\">\n<\uff5cDSML\uff5c parameter name=\"op\" string=\"true\">status</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 9,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"read_file\">\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">tests/test_reverse_words.py</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 10,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"run_tests\">\n\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        },
+        {
+          "index": 11,
+          "kind": "protocol",
+          "raw": "\n\n<\uff5cDSML\uff5c calls>\n<\uff5cDSML\uff5c invoke name=\"grep\">\n<\uff5cDSML\uff5c parameter name=\"pattern\" string=\"true\">reverse</\uff5cDSML\uff5c parameter>\n<\uff5cDSML\uff5c parameter name=\"path\" string=\"true\">.</\uff5cDSML\uff5c parameter>\n</\uff5cDSML\uff5c invoke>\n</\uff5cDSML\uff5c calls>"
+        }
+      ]
+    }
+  ]
+}

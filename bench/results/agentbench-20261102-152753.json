@@ -1,0 +1,190 @@
+{
+  "stamp": "20261102-152753",
+  "endpoint": "https://integrate.api.nvidia.com/v1",
+  "model_note": "DeepSeek V4.1 Flash (NIM)",
+  "passed": 0,
+  "total": 18,
+  "pass_rate": 0.0,
+  "results": [
+    {
+      "name": "qa-read",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.4,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "find-symbol",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.5,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "find-text",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.6,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "fix-test",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.3,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "patch-update",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "proto-read",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "proto-grep",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.5,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "proto-test",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "bug-hunt",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "multi-file",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.3,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "adapt-recovery",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "write-test",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "typo-hunt",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "refactor-sig",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.4,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "debug-cross",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "implement-spec",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "config-recovery",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "pipeline",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 401 from llama-server /chat/completions: Header of type `authorization` was missing",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.2,
+      "final": null,
+      "steps": []
+    }
+  ]
+}

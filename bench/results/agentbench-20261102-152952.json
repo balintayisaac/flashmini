@@ -1,0 +1,312 @@
+{
+  "stamp": "20261102-152952",
+  "endpoint": "https://integrate.api.nvidia.com/v1",
+  "model_note": "DeepSeek V4.1 Flash (NIM)",
+  "passed": 0,
+  "total": 18,
+  "pass_rate": 0.0,
+  "results": [
+    {
+      "name": "qa-read",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 163.6,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "find-symbol",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 20.9,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "find-text",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 25.1,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "fix-test",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 6.0,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "patch-update",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 5.5,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "proto-read",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 31.3,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "proto-grep",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 13.7,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "proto-test",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 14.9,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "bug-hunt",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 83.9,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "multi-file",
+      "passed": false,
+      "detail": "pytest rc=2 (1 error in 0.11s); rename_clean=False",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 633.8,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 1,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 2,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 3,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 4,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 5,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 6,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 7,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 8,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 9,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 10,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 11,
+          "kind": "protocol",
+          "raw": ""
+        }
+      ]
+    },
+    {
+      "name": "adapt-recovery",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 266.3,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "write-test",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 22.8,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "typo-hunt",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 55.1,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "refactor-sig",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 11.8,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "debug-cross",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 51.6,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "implement-spec",
+      "passed": false,
+      "detail": "pytest rc=2 (1 error in 0.11s)",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 454.8,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 1,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 2,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 3,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 4,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 5,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 6,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 7,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 8,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 9,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 10,
+          "kind": "protocol",
+          "raw": ""
+        },
+        {
+          "index": 11,
+          "kind": "protocol",
+          "raw": ""
+        }
+      ]
+    },
+    {
+      "name": "config-recovery",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 555.3,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "pipeline",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 500 from llama-server /chat/completions: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 325.9,
+      "final": null,
+      "steps": []
+    }
+  ]
+}
