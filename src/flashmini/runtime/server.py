@@ -30,6 +30,8 @@ DEFAULT_SPEC_TYPE = "draft-mtp"
 DEFAULT_SPEC_DRAFT_N_MAX = 1
 DEFAULT_STARTUP_TIMEOUT_S = 180.0
 DEFAULT_CHAT_TIMEOUT_S = 600.0
+# NIM free-tier rate limits: retry an HTTP 429 twice before giving up.
+_RETRY_DELAYS = (5.0, 15.0)
 HEALTH_POLL_INTERVAL_S = 0.5
 PREFERRED_MODEL_FILE = "Qwen3.5-4B-MTP-UD-Q4_K_XL.gguf"
 
@@ -234,6 +236,8 @@ class ChatClient:
 
     base_url: str
     timeout_s: float = DEFAULT_CHAT_TIMEOUT_S
+    api_key: str | None = None
+    model: str | None = None
 
     def chat(
         self,
@@ -256,7 +260,19 @@ class ChatClient:
         enforcement and ``cache_prompt`` prefix reuse (cache hits show in
         ``usage.prompt_tokens_details.cached_tokens``).
         """
-        payload: dict[str, Any] = {
+        if self.model is not None:
+            # OpenAI-compat remote endpoints (e.g. NVIDIA NIM): send the model
+            # field + response_format; drop llama-server-only extensions.
+            payload: dict[str, Any] = {
+                "model": self.model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if json_schema is not None:
+                payload["response_format"] = {"type": "json_object"}
+            return self._post("/v1/chat/completions", payload)
+        payload = {
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
@@ -283,20 +299,32 @@ class ChatClient:
 
     def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         body = json.dumps(payload).encode("utf-8")
-        request = urllib.request.Request(
-            f"{self.base_url}{path}",
-            data=body,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout_s) as resp:
-                raw = resp.read()
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="replace")[:400]
-            raise ServerError(f"HTTP {exc.code} from llama-server {path}: {detail}") from exc
-        except (urllib.error.URLError, OSError) as exc:
-            raise ServerError(f"could not reach llama-server at {self.base_url}: {exc}") from exc
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        delays = (*_RETRY_DELAYS, None)
+        raw = b""
+        for delay in delays:
+            request = urllib.request.Request(
+                f"{self.base_url}{path}",
+                data=body,
+                headers=headers,
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=self.timeout_s) as resp:
+                    raw = resp.read()
+                break
+            except urllib.error.HTTPError as exc:
+                if exc.code == 429 and delay is not None:
+                    time.sleep(delay)
+                    continue
+                detail = exc.read().decode("utf-8", errors="replace")[:400]
+                raise ServerError(f"HTTP {exc.code} from llama-server {path}: {detail}") from exc
+            except (urllib.error.URLError, OSError) as exc:
+                raise ServerError(
+                    f"could not reach llama-server at {self.base_url}: {exc}"
+                ) from exc
         data = json.loads(raw.decode("utf-8"))
         if not isinstance(data, dict):
             raise ServerError("unexpected non-object response from llama-server")

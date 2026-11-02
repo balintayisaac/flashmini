@@ -676,6 +676,10 @@ def main() -> int:
     parser.add_argument(
         "--base-url", help="OpenAI-compatible endpoint; default = local llama-server"
     )
+    parser.add_argument(
+        "--model",
+        help="model id for OpenAI-compat endpoints (enables compat payload mode)",
+    )
     parser.add_argument("--model-note", default="", help="label for the model under test")
     parser.add_argument("--only", default="", help="comma-separated task names to run")
     parser.add_argument("--verbose", action="store_true", help="print every agent step")
@@ -688,7 +692,15 @@ def main() -> int:
     if args.base_url:
         note = args.model_note or "remote endpoint"
         print(f"AgentBench v0 — endpoint: {args.base_url} ({note})")
-        results = run_suite(ChatClient(base_url=args.base_url), only, args.verbose)
+        results = run_suite(
+            ChatClient(
+                base_url=args.base_url,
+                model=args.model,
+                api_key=os.environ.get("FLASHMINI_API_KEY"),
+            ),
+            only,
+            args.verbose,
+        )
         endpoint = args.base_url
     else:
         note = args.model_note or LOCAL_MODEL_NOTE
