@@ -87,8 +87,8 @@ def run_tests(ctx: ToolContext, command: str | None = None) -> ToolResult:
         ctx,
         tool="run_tests",
         command=command,
-        default=["uv", "run", "pytest", "-q"],
-        fallback=[sys.executable, "-m", "pytest", "-q"],
+        default=["uv", "run", "pytest", "-q", "--tb=line"],
+        fallback=[sys.executable, "-m", "pytest", "-q", "--tb=line"],
         timeout_s=ctx.test_timeout_s,
         parse_summary=True,
     )
