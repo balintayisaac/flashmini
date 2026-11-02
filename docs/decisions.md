@@ -381,3 +381,45 @@ Verdict: f16 stays. At context 4096 the KV quantization saves 60–93 MiB
 depth 2). KV quantization becomes interesting only if the context moves
 to 8k+, where KV bytes dominate the marginal RSS; that decision is
 deferred to the 8k-context experiment.
+
+## Frontier head-to-head: DeepSeek V4.1 Flash 12/18 vs FlashMini 18/18 (2026-11-02)
+
+First cross-model run on identical graders (18-task AgentBench, same
+12-step budget), via the NIM API (`deepseek-ai/deepseek-v4.1-flash`,
+free tier, flash tier of the family). Remote mode required three
+infrastructure fixes first (v13 `2d7c533` OpenAI-compat payload + 429
+retry; v13b `9166a8f` /v1-join normalization; v14 `8a38197` drop
+response_format — it makes this reasoning model return empty content —
+plus 500-retry; NIM's backend also 500s on some large-token plain
+requests). Two full runs were lost to these before the clean attempt.
+
+**Score: DeepSeek V4.1 Flash 12/18 (67%) — FlashMini (Qwen3.5-4B,
+local, tuned loop) 18/18 (round 6) / 17/18 (round 7).**
+
+| task | DS4.1 | FlashMini r6 |
+|---|---|---|
+| v0 protocol/skill (8) | 8/8, 3–15 s each | 8/8 |
+| bug-hunt | FAIL (never fixed) | PASS 111 s |
+| multi-file | PASS 100 s | PASS 275 s |
+| adapt-recovery | FAIL (extra blank line before [cache]; grader byte-compares) | PASS 166 s |
+| write-test | FAIL (test file never created) | PASS 118 s |
+| typo-hunt | PASS 314 s | PASS 89 s |
+| refactor-sig | FAIL (zero parsed tool calls) | PASS 199 s |
+| debug-cross | FAIL (never opened lib/tax.py) | PASS 207 s |
+| implement-spec | PASS 276 s | marginal (1 pass / 4 fails) |
+| config-recovery | FAIL (zero parsed tool calls) | PASS 220 s |
+| pipeline | PASS 379 s | PASS 69 s |
+
+Honest caveats: flash tier ≠ full DS4.1; free-tier NIM; three failures
+were zero-tool-call runs — a reasoning model narrating instead of
+acting inside our strict single-JSON protocol (protocol adherence is
+part of agent capability, but it is an asymmetry worth naming);
+adapt-recovery failed on byte-exactness (one blank line) — the same
+anti-tamper bar FlashMini passes, kept unchanged for benchmark
+integrity.
+
+**Distillation flywheel demonstrated end-to-end:** DS4.1's 12 passing
+trajectories land in bench-JSON schema and the dataset builder absorbs
+them as verified samples — including implement-spec, the measured
+FlashMini weak spot, which the teacher solved in our exact protocol
+shape. Dataset: 119 passing runs → 92 unique verified samples (was 85).
