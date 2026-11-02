@@ -30,7 +30,8 @@ DEFAULT_SPEC_TYPE = "draft-mtp"
 DEFAULT_SPEC_DRAFT_N_MAX = 1
 DEFAULT_STARTUP_TIMEOUT_S = 180.0
 DEFAULT_CHAT_TIMEOUT_S = 600.0
-# NIM free-tier rate limits: retry an HTTP 429 twice before giving up.
+# NIM free-tier flakiness: retry HTTP 429 (rate limits) and 500 (backend
+# errors — DS4.1-flash crashed on plain 2048-token requests) twice.
 _RETRY_DELAYS = (5.0, 15.0)
 HEALTH_POLL_INTERVAL_S = 0.5
 PREFERRED_MODEL_FILE = "Qwen3.5-4B-MTP-UD-Q4_K_XL.gguf"
@@ -262,15 +263,16 @@ class ChatClient:
         """
         if self.model is not None:
             # OpenAI-compat remote endpoints (e.g. NVIDIA NIM): send the model
-            # field + response_format; drop llama-server-only extensions.
+            # field; drop llama-server-only extensions. response_format is NOT
+            # sent: NIM reasoning models (DS4.1-flash) return EMPTY content
+            # under json_object mode — the system prompt already mandates
+            # single-JSON replies, so structured decoding is unnecessary.
             payload: dict[str, Any] = {
                 "model": self.model,
                 "messages": messages,
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             }
-            if json_schema is not None:
-                payload["response_format"] = {"type": "json_object"}
             return self._post("/v1/chat/completions", payload)
         payload = {
             "messages": messages,
@@ -321,7 +323,7 @@ class ChatClient:
                     raw = resp.read()
                 break
             except urllib.error.HTTPError as exc:
-                if exc.code == 429 and delay is not None:
+                if exc.code in (429, 500) and delay is not None:
                     time.sleep(delay)
                     continue
                 detail = exc.read().decode("utf-8", errors="replace")[:400]

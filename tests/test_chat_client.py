@@ -69,7 +69,9 @@ class TestRemoteCompat:
         assert req["auth"] == "Bearer sk-test"
         payload = req["payload"]
         assert payload["model"] == "test/model"
-        assert payload["response_format"] == {"type": "json_object"}
+        # NIM reasoning models (DS4.1-flash) return EMPTY content under
+        # response_format json_object — never send it (v14; probe-verified).
+        assert "response_format" not in payload
         assert "cache_prompt" not in payload
         assert "chat_template_kwargs" not in payload
         assert "grammar" not in payload
@@ -88,6 +90,15 @@ class TestRemoteCompat:
 class TestRateLimitRetry:
     def test_429s_are_retried_then_succeed(self, capture: str) -> None:
         _CaptureHandler.statuses = [429, 429, 200]
+        client = ChatClient(capture, model="test/model", api_key="sk")
+        out = client.chat_text([{"role": "user", "content": "hi"}])
+        assert out == "ok"
+        assert len(_CaptureHandler.requests) == 3
+
+    def test_500s_are_retried_then_succeed(self, capture: str) -> None:
+        # NIM backend flakiness: DS4.1-flash returned HTTP 500 on 16/18 bench
+        # tasks. 500 must be retryable like 429 (probe: plain mt=2048 → 500).
+        _CaptureHandler.statuses = [500, 500, 200]
         client = ChatClient(capture, model="test/model", api_key="sk")
         out = client.chat_text([{"role": "user", "content": "hi"}])
         assert out == "ok"
