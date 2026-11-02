@@ -12,6 +12,7 @@ import shlex
 import shutil
 import sys
 import time
+from pathlib import Path
 
 from flashmini.exec import elapsed_ms, run_command
 from flashmini.tools.context import ToolContext
@@ -91,6 +92,7 @@ def run_tests(ctx: ToolContext, command: str | None = None) -> ToolResult:
         fallback=[sys.executable, "-m", "pytest", "-q", "--tb=line"],
         timeout_s=ctx.test_timeout_s,
         parse_summary=True,
+        ensure_flags=("-q", "--tb=line", "-ra"),
     )
 
 
@@ -116,6 +118,7 @@ def _run_project_command(
     fallback: list[str],
     timeout_s: float,
     parse_summary: bool,
+    ensure_flags: tuple[str, ...] = (),
 ) -> ToolResult:
     started = time.monotonic()
     if command:
@@ -129,6 +132,12 @@ def _run_project_command(
             )
     else:
         argv = _default_argv(ctx, default, fallback)
+    # Model-supplied commands are runner choices, not verbosity choices: keep
+    # the failure-visibility flags on every pytest invocation path (v12 probe:
+    # command="pytest" bypassed --tb=line, assertion diffs were trimmed away
+    # by the envelope head+tail cut, and the model oscillated blindly).
+    if any(Path(a).name == "pytest" for a in argv):
+        argv = argv + [f for f in ensure_flags if f not in argv]
     result = run_command(
         argv,
         cwd=ctx.workspace,

@@ -61,6 +61,20 @@ def test_run_tests_custom_command(ctx: ToolContext) -> None:
     assert "3 passed" in (result.next_action_hint or "")
 
 
+def test_run_tests_explicit_pytest_gets_failure_visibility(ctx: ToolContext) -> None:
+    """Model-supplied commands must not bypass failure visibility (v12 probe:
+    command='pytest' produced a verbose header + trimmed-out assertion diffs,
+    and the model oscillated on guesses). Force -q/--tb=line/-ra whenever the
+    command runs pytest; non-pytest commands stay untouched."""
+    (ctx.workspace / "test_x.py").write_text("def test_fail():\n    assert 1 == 2\n")
+    command = f"{sys.executable} -m pytest"
+    result = run_tests(ctx, command)
+    out = result.output
+    assert "test session starts" not in out  # -q applied
+    assert "short test summary info" in out  # -ra applied
+    assert "FAILED" in out  # one-line failure visible
+
+
 def test_run_tests_reports_failures(ctx: ToolContext) -> None:
     command = f"{sys.executable} -c \"print('1 passed, 2 failed')\""
     result = run_tests(ctx, command)
