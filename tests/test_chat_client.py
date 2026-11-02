@@ -28,7 +28,9 @@ class _CaptureHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         length = int(self.headers.get("Content-Length", "0"))
         payload = json.loads(self.rfile.read(length))
-        type(self).requests.append({"auth": self.headers.get("Authorization"), "payload": payload})
+        type(self).requests.append(
+            {"path": self.path, "auth": self.headers.get("Authorization"), "payload": payload}
+        )
         statuses = type(self).statuses
         status = statuses.pop(0) if statuses else 200
         body = json.dumps(type(self).response).encode()
@@ -97,3 +99,16 @@ class TestRateLimitRetry:
         with pytest.raises(server_module.ServerError):
             client.chat_text([{"role": "user", "content": "hi"}])
         assert len(_CaptureHandler.requests) == 3
+
+
+class TestBaseUrlJoin:
+    def test_v1_base_url_is_not_doubled(self, capture) -> None:
+        """NIM-style bases already end in /v1; the wire path must carry it once."""
+        client = ChatClient(f"{capture}/v1", model="m", api_key="k")
+        client.chat_text([{"role": "user", "content": "hi"}])
+        assert _CaptureHandler.requests[0]["path"].count("/v1") == 1
+
+    def test_local_base_url_keeps_v1_path(self, capture) -> None:
+        client = ChatClient(capture)
+        client.chat_text([{"role": "user", "content": "hi"}])
+        assert _CaptureHandler.requests[0]["path"] == "/v1/chat/completions"

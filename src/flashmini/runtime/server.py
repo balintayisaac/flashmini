@@ -304,9 +304,14 @@ class ChatClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
         delays = (*_RETRY_DELAYS, None)
         raw = b""
+        base = self.base_url.rstrip("/")
+        if base.endswith("/v1") and path.startswith("/v1"):
+            # Remote OpenAI-style bases already include /v1 (e.g. NIM) — never
+            # join into /v1/v1/... (round: DS4.1 head-to-head 0/18 by 404).
+            path = path[3:]
         for delay in delays:
             request = urllib.request.Request(
-                f"{self.base_url}{path}",
+                f"{base}{path}",
                 data=body,
                 headers=headers,
                 method="POST",
