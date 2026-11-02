@@ -50,6 +50,19 @@ def main() -> None:
     args = parse_args()
     dataset = load_dataset("json", data_files=args.dataset, split="train")
 
+    # Probe the chat template before building the config: TRL silently
+    # falls back to full-sequence loss when the template lacks
+    # {% generation %} markers — make that decision explicit.
+    from transformers import AutoTokenizer
+
+    template = AutoTokenizer.from_pretrained(BASE_MODEL).chat_template or ""
+    assistant_only = "{% generation %}" in template
+    if not assistant_only:
+        print(
+            "chat template lacks {% generation %} markers "
+            "-> training with full-sequence loss"
+        )
+
     trainer = SFTTrainer(
         model=BASE_MODEL,
         args=SFTConfig(
@@ -64,7 +77,7 @@ def main() -> None:
             report_to=[],
             max_length=args.max_length,
             packing=False,  # padding_free needs FlashAttention (absent on T4)
-            assistant_only_loss=True,
+            assistant_only_loss=assistant_only,
             model_init_kwargs={
                 "dtype": "float16",
                 "quantization_config": {
