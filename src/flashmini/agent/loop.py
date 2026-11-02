@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from flashmini.agent.schemas import build_system_prompt, tool_call_schema
-from flashmini.runtime.server import ChatClient
+from flashmini.runtime.server import ChatClient, ServerError
 from flashmini.tools import ToolRegistry, ToolResult, ToolStatus
 
 MAX_STEPS_DEFAULT = 8
@@ -108,12 +108,49 @@ def envelope_message(result: ToolResult) -> str:
     payload = {
         "tool": result.tool,
         "status": result.status.value,
-        "output": result.output[:OUTPUT_CHARS],
-        "stderr": result.stderr[:STDERR_CHARS],
+        "output": _trim_output(result.output, OUTPUT_CHARS),
+        "stderr": _trim_output(result.stderr, STDERR_CHARS),
         "truncated": result.truncated,
         "next_action_hint": result.next_action_hint,
     }
     return json.dumps(payload, ensure_ascii=False)
+
+
+def _trim_output(text: str, limit: int) -> str:
+    """Head+tail trim with an explicit omission marker (v11).
+
+    A flat cut keeps the head of long outputs and loses the failure summary
+    at the tail (pytest summaries end the output), and several full-size
+    envelopes accumulate into context overflow (round 7: 4447 tokens
+    against a 4096-token context).
+    """
+    if len(text) <= limit:
+        return text
+    half = limit // 2
+    omitted = len(text) - 2 * half
+    return f"{text[:half]}\n[{omitted} chars omitted]\n{text[-half:]}"
+
+
+def _compact_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop older tool-result bodies to reclaim context (roadmap A4).
+
+    Keeps the most recent tool result intact; every earlier one becomes a
+    one-line placeholder. Called only after the server rejected the request
+    for exceeding the context window, and retried exactly once.
+    """
+    result_idx = [
+        i
+        for i, m in enumerate(messages)
+        if m["role"] == "user" and str(m.get("content", "")).startswith("Tool result")
+    ]
+    compact = [dict(m) for m in messages]
+    for i in result_idx[:-1]:
+        body = str(compact[i]["content"])
+        compact[i] = {
+            "role": "user",
+            "content": f"Tool result: (earlier tool result omitted: {len(body)} chars)",
+        }
+    return compact
 
 
 class AgentLoop:
@@ -154,11 +191,23 @@ class AgentLoop:
         noop_writes: dict[str, int] = {}
 
         for index in range(self.max_steps):
-            raw = self.client.chat_text(
-                messages,
-                json_schema=tool_call_schema(names),
-                max_tokens=self.max_tokens,
-            )
+            try:
+                raw = self.client.chat_text(
+                    messages,
+                    json_schema=tool_call_schema(names),
+                    max_tokens=self.max_tokens,
+                )
+            except ServerError as exc:
+                # Context overflow: compact older tool results and retry once
+                # (v11 / roadmap A4). Any other server failure still propagates.
+                if "exceeds the available context size" not in str(exc):
+                    raise
+                messages = _compact_messages(messages)
+                raw = self.client.chat_text(
+                    messages,
+                    json_schema=tool_call_schema(names),
+                    max_tokens=self.max_tokens,
+                )
             data = parse_step(raw)
 
             if data is None:
