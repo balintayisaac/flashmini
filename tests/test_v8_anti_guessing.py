@@ -68,3 +68,42 @@ def test_second_unseen_name_write_escalates(tmp_path: Path) -> None:
     assert escalations, "expected user-role invented-name reminder on 2nd unseen write"
     assert "2 times" in escalations[0]["content"]
     assert "grep" in escalations[0]["content"]
+
+
+def test_escalation_stops_once_names_are_known(tmp_path: Path) -> None:
+    """Once the model writes clean content, no further invented-name
+    reminders may be appended (spam guard)."""
+    (tmp_path / "lib.py").write_text("KNOWN_NAME = True\n")
+    client = FakeClient(
+        [
+            json.dumps(
+                {
+                    "tool": "write_file",
+                    "args": {"path": "lib.py", "content": "KNOWN_NAME = True\nINVENTED_A = 1\n"},
+                }
+            ),
+            json.dumps({"tool": "read_file", "args": {"path": "lib.py"}}),
+            json.dumps(
+                {
+                    "tool": "write_file",
+                    "args": {"path": "lib.py", "content": "KNOWN_NAME = True\nINVENTED_B = 2\n"},
+                }
+            ),
+            # Model corrected itself: clean write → must stay quiet
+            json.dumps(
+                {"tool": "write_file", "args": {"path": "lib.py", "content": "KNOWN_NAME = True\n"}}
+            ),
+            json.dumps({"tool": "read_file", "args": {"path": "lib.py"}}),
+            json.dumps({"final": "done"}),
+        ]
+    )
+    loop = AgentLoop(build_default_registry(ToolContext(workspace=tmp_path)), client)
+    loop.run("update lib.py")
+
+    # The reminder from the 2nd unseen write legitimately stays in history;
+    # clean steps must NOT append new ones (spam guard). Final request's
+    # history must contain exactly one such message.
+    reminders = [
+        m for m in client.requests[-1] if m["content"].startswith("STOP guessing spellings")
+    ]
+    assert len(reminders) == 1, f"expected 1 reminder in history, got {len(reminders)}"

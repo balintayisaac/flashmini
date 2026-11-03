@@ -434,10 +434,11 @@ class AgentLoop:
             if unseen_warning:
                 message = unseen_warning + "\n" + message
             messages.append({"role": "user", "content": message})
-            if unseen_write_count >= 2:
+            if unseen_warning and unseen_write_count >= 2:
                 # Prefix warnings were ignored (round 6 typo-hunt: the model
                 # invented 'frobnicate' instead of finding FROBNICATOR).
-                # Escalate: forbid further writes until the name is confirmed.
+                # Escalate — only while the current write AGAIN introduces
+                # unseen names; once the model writes clean content, stop.
                 messages.append(
                     {
                         "role": "user",
