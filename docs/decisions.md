@@ -472,3 +472,21 @@ tests/test_v7_doom_loop.py (181 total).
 Remeasure: implement-spec **PASS 351.9 s** — trace shows genuine
 iteration ('n-a' → 'hello--world' → 4/4 green), no repeated content.
 Round 6 (full confirmation) running.
+
+## 2026-11-03 — v9 + 16 steps; honest per-task pass rates; pre-SFT baseline
+
+Rounds 6/7 (16→12 steps... 12 steps) showed implement-spec and
+debug-cross failing ~40-50% of runs. v9 teaches observability (print()
++ `pytest -s`; failed runs as data points to solve from); bench budget
+raised to MAX_STEPS=16, DEADLINE_S=1500 (observe→fix→verify needs more
+room; disclosed as a harness change).
+
+Remeasure: debug-cross **PASS** (derived TAX_RATE=0.2 directly — no
+guess ladder). implement-spec still FAIL: with 16 steps the model
+explores a second distinct implementation (error changes 'n-a' →
+'hello,-world!') but oscillates between its two broken variants and
+never uses print-observability unprompted. Verdict: base-4B capability
+ceiling on multi-constraint string logic. Prompt iteration stops here;
+the 98 verified SFT trajectories (incl. correct implement-spec) are the
+designed fix. Full 18-task round 8 = official pre-SFT baseline the
+trained model must beat.
