@@ -30,9 +30,133 @@ _GIT_ENV = {
     "LC_ALL": "C.UTF-8",
 }
 
-_FORBIDDEN_ARG_PARTS = ("..", "/", "--output", "--git-dir", "--work-tree", "--amend", "--force")
+_FORBIDDEN_ARG_PARTS = (
+    "..",
+    "/",
+    "--output",
+    "--git-dir",
+    "--work-tree",
+    "--amend",
+    "--force",
+    "--ext-diff",
+    "--textconv",
+    "--no-index",
+)
 
 _RESULT_RE = re.compile(r"(\d+)\s+passed|(\d+)\s+failed")
+
+# --- command= override allowlist (security audit C1) -----------------------
+# A model-supplied `command` used to be arbitrary argv execution (verified:
+# `bash -c 'echo LEAK: $FLASHMINI_API_KEY'` ran as the user).  Overrides are
+# now restricted to allowlisted test/lint runners with a fixed flag set.
+# NOTE: pytest still executes workspace test code by design — this closes the
+# shell/env/network one-liner hole, not a VM sandbox.
+_PYTEST_FLAGS = frozenset(
+    {
+        "-q",
+        "--quiet",
+        "-v",
+        "-vv",
+        "--tb=line",
+        "--tb=short",
+        "--tb=long",
+        "--tb=no",
+        "-ra",
+        "-rA",
+        "-x",
+        "-s",
+        "--no-header",
+        "--lf",
+        "--ff",
+        "--disable-warnings",
+        "--collect-only",
+        "--setup-show",
+    }
+)
+_PYTEST_VALUE_FLAGS = frozenset({"-k", "-m", "--maxfail", "--durations", "-W"})
+_RUFF_SUBCOMMANDS = frozenset({"check", "format"})
+_RUFF_FLAGS = frozenset({"-q", "-v", "--statistics", "--no-cache"})
+_RUFF_VALUE_FLAGS = frozenset({"--select", "--extend-select", "--ignore", "--output-format"})
+
+
+def _selector_ok(tok: str) -> bool:
+    """A positional arg must be a workspace-relative test/lint selector."""
+    return (
+        tok != "" and not tok.startswith("-") and not tok.startswith(("/", "~")) and ".." not in tok
+    )
+
+
+def _validate_override(tool: str, argv: list[str], started: float) -> ToolResult | None:
+    """Return a ``denied`` result unless argv is an allowlisted override."""
+    exe = Path(argv[0]).name  # overrides may use absolute interpreter paths
+    if exe in ("python", "python3"):
+        if len(argv) >= 3 and argv[1] == "-m" and argv[2] in ("pytest", "ruff"):
+            runner, rest = argv[2], argv[3:]
+        else:
+            runner, rest = "", argv[1:]
+    elif exe == "uv":
+        if len(argv) >= 3 and argv[1] == "run" and argv[2] in ("pytest", "ruff"):
+            runner, rest = argv[2], argv[3:]
+        else:
+            runner, rest = "", argv[1:]
+    elif exe in ("pytest", "ruff"):
+        runner, rest = exe, argv[1:]
+    else:
+        runner, rest = "", argv[1:]
+    if runner == "":
+        return ToolResult.denied(
+            tool,
+            f"command runner not allowed: {argv[0]!r}",
+            duration_ms=elapsed_ms(started),
+            next_action_hint=(
+                "use pytest, python -m pytest, uv run pytest, ruff, or "
+                "uv run ruff; omit command= for the default suite"
+            ),
+        )
+    if runner == "ruff":
+        if not rest or rest[0] not in _RUFF_SUBCOMMANDS:
+            return ToolResult.denied(
+                tool,
+                "ruff override must start with 'check' or 'format'",
+                duration_ms=elapsed_ms(started),
+                next_action_hint="e.g. command='ruff check src'",
+            )
+        rest = rest[1:]
+        ok_flags, value_flags = _RUFF_FLAGS, _RUFF_VALUE_FLAGS
+    else:
+        ok_flags, value_flags = _PYTEST_FLAGS, _PYTEST_VALUE_FLAGS
+    i = 0
+    while i < len(rest):
+        tok = rest[i]
+        if tok.startswith("-"):
+            if tok in value_flags:
+                if i + 1 >= len(rest):
+                    return ToolResult.denied(
+                        tool,
+                        f"flag {tok!r} requires a value",
+                        duration_ms=elapsed_ms(started),
+                    )
+                i += 2
+                continue
+            if tok not in ok_flags:
+                return ToolResult.denied(
+                    tool,
+                    f"flag not allowed: {tok!r}",
+                    duration_ms=elapsed_ms(started),
+                    next_action_hint=(
+                        "see the pytest/ruff docs; only a fixed set of "
+                        "reporting and selection flags is permitted"
+                    ),
+                )
+        elif not _selector_ok(tok):
+            return ToolResult.denied(
+                tool,
+                f"selector not allowed: {tok!r}",
+                duration_ms=elapsed_ms(started),
+                next_action_hint="use workspace-relative paths without '..'",
+            )
+        i += 1
+    return None
 
 
 def git_ops(ctx: ToolContext, op: str, args: list[str] | None = None) -> ToolResult:
@@ -130,6 +254,9 @@ def _run_project_command(
                 duration_ms=elapsed_ms(started),
                 next_action_hint="pass a command string or omit it for the default",
             )
+        denial = _validate_override(tool, argv, started)
+        if denial is not None:
+            return denial
     else:
         argv = _default_argv(ctx, default, fallback)
     # Model-supplied commands are runner choices, not verbosity choices: keep

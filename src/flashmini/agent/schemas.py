@@ -27,8 +27,14 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     "git_ops": (
         "git_ops(op, args?) — safe git: status, diff, log, show, add, commit, rev-parse, branch"
     ),
-    "run_tests": "run_tests(command?) — run pytest; returns a pass/fail summary",
-    "lint": "lint(command?) — run ruff",
+    "run_tests": (
+        "run_tests(command?) — run pytest; command may only pick a runner"
+        " (pytest / python -m pytest / uv run pytest) plus safe flags and paths"
+    ),
+    "lint": (
+        "lint(command?) — run ruff; command may only pick ruff / uv run ruff"
+        " plus safe flags and paths"
+    ),
 }
 
 

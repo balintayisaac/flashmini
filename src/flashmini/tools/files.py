@@ -36,12 +36,16 @@ def backup_file(ctx: ToolContext, target: Path) -> Path | None:
 
 
 def atomic_write(target: Path, content: str) -> None:
-    """Replace ``target`` with ``content`` atomically."""
+    """Replace ``target`` with ``content`` atomically, preserving its mode."""
     fd, tmp_name = tempfile.mkstemp(dir=str(target.parent), prefix=".flashmini-tmp-")
     tmp = Path(tmp_name)
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
             fh.write(content)
+        if target.exists():
+            # mkstemp creates 0600; a rewritten file must keep its prior mode
+            # (incl. exec bits) instead of silently dropping to owner-only.
+            os.chmod(tmp, target.stat().st_mode & 0o777)
         os.replace(tmp, target)
     finally:
         tmp.unlink(missing_ok=True)
@@ -82,7 +86,10 @@ def read_file(
                 "to list the directory"
             ),
         )
-    raw = target.read_bytes()[: ctx.max_read_bytes + 1]
+    # Read through a bounded file handle: read_bytes() would slurp the whole
+    # file into memory before the slice (OOM DoS on a multi-GiB file).
+    with target.open("rb") as fh:
+        raw = fh.read(ctx.max_read_bytes + 1)
     if b"\x00" in raw[:_BINARY_SAMPLE]:
         return ToolResult.error(
             tool,

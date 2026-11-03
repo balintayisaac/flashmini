@@ -329,10 +329,21 @@ class ChatClient:
                 detail = exc.read().decode("utf-8", errors="replace")[:400]
                 raise ServerError(f"HTTP {exc.code} from llama-server {path}: {detail}") from exc
             except (urllib.error.URLError, OSError) as exc:
+                if delay is not None:
+                    # Connection resets are the documented NIM/Kaggle egress
+                    # flake mode (audit I11): retry like 429/500 instead of
+                    # failing the whole trajectory on the first drop.
+                    time.sleep(delay)
+                    continue
                 raise ServerError(
                     f"could not reach llama-server at {self.base_url}: {exc}"
                 ) from exc
-        data = json.loads(raw.decode("utf-8"))
+        try:
+            data = json.loads(raw.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise ServerError(
+                f"malformed response body from llama-server {path}: {raw[:200]!r}"
+            ) from exc
         if not isinstance(data, dict):
             raise ServerError("unexpected non-object response from llama-server")
         return data

@@ -7,6 +7,7 @@ cannot exhaust memory, and a timed-out process group is killed hard.
 
 import contextlib
 import os
+import re
 import signal
 import subprocess
 import tempfile
@@ -35,6 +36,65 @@ def elapsed_ms(start: float) -> int:
     return int((time.monotonic() - start) * 1000)
 
 
+# Model-triggered subprocesses must not inherit the user's secrets.  The
+# default environment is an allowlist; anything starting with these prefixes
+# (project-local, non-secret plumbing) passes, except explicitly listed keys.
+_ENV_ALLOWLIST = frozenset(
+    {
+        "PATH",
+        "HOME",
+        "USER",
+        "LOGNAME",
+        "SHELL",
+        "TERM",
+        "LANG",
+        "LC_ALL",
+        "LC_CTYPE",
+        "TMPDIR",
+        "VIRTUAL_ENV",
+        "PYTHONHASHSEED",
+        "SSL_CERT_FILE",
+        "SSL_CERT_DIR",
+        "http_proxy",
+        "https_proxy",
+        "no_proxy",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "NO_PROXY",
+    }
+)
+_ENV_ALLOWLIST_PREFIXES = ("UV_", "FLASHMINI_")
+_ENV_SECRET_KEYS = ("FLASHMINI_API_KEY", "KAGGLE_API_TOKEN")
+_SECRET_PATTERNS = (
+    (re.compile(r"nvapi-[A-Za-z0-9_-]{8,}"), "<redacted-nvapi-key>"),
+    (re.compile(r"KGAT_[A-Za-z0-9]+"), "<redacted-kaggle-token>"),
+)
+
+
+def _child_env(extra: dict[str, str] | None) -> dict[str, str]:
+    """Allowlisted copy of the parent environment (secrets withheld)."""
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if (k in _ENV_ALLOWLIST or k.startswith(_ENV_ALLOWLIST_PREFIXES))
+        and k not in _ENV_SECRET_KEYS
+    }
+    if extra:
+        env.update(extra)
+    return env
+
+
+def _scrub_secrets(text: str) -> str:
+    """Defense-in-depth: keep known key material out of captured output."""
+    for key in _ENV_SECRET_KEYS:
+        val = os.environ.get(key)
+        if val:
+            text = text.replace(val, f"<redacted-{key.lower().replace('_', '-')}>")
+    for pattern, repl in _SECRET_PATTERNS:
+        text = pattern.sub(repl, text)
+    return text
+
+
 def run_command(
     argv: list[str],
     *,
@@ -46,9 +106,7 @@ def run_command(
 ) -> ExecResult:
     """Run ``argv`` in ``cwd`` with a hard timeout and bounded output."""
     start = time.monotonic()
-    proc_env = dict(os.environ)
-    if env:
-        proc_env.update(env)
+    proc_env = _child_env(env)
     with tempfile.TemporaryFile() as out_f, tempfile.TemporaryFile() as err_f:
         try:
             proc = subprocess.Popen(
@@ -86,8 +144,8 @@ def run_command(
     return ExecResult(
         argv=argv,
         returncode=proc.returncode,
-        stdout=raw_out[:max_output_bytes].decode("utf-8", errors="replace"),
-        stderr=raw_err[:max_output_bytes].decode("utf-8", errors="replace"),
+        stdout=_scrub_secrets(raw_out[:max_output_bytes].decode("utf-8", errors="replace")),
+        stderr=_scrub_secrets(raw_err[:max_output_bytes].decode("utf-8", errors="replace")),
         duration_ms=elapsed_ms(start),
         timed_out=timed_out,
         stdout_truncated=len(raw_out) > max_output_bytes,

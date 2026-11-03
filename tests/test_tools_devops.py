@@ -55,10 +55,10 @@ def test_branch_flags_restricted(ctx: ToolContext) -> None:
 
 
 def test_run_tests_custom_command(ctx: ToolContext) -> None:
-    command = f"{sys.executable} -c \"print('3 passed')\""
-    result = run_tests(ctx, command)
+    (ctx.workspace / "test_ok.py").write_text("def test_ok():\n    assert True\n")
+    result = run_tests(ctx, f"{sys.executable} -m pytest -q test_ok.py")
     assert result.status is ToolStatus.OK
-    assert "3 passed" in (result.next_action_hint or "")
+    assert "1 passed" in (result.next_action_hint or "")
 
 
 def test_run_tests_explicit_pytest_gets_failure_visibility(ctx: ToolContext) -> None:
@@ -76,18 +76,66 @@ def test_run_tests_explicit_pytest_gets_failure_visibility(ctx: ToolContext) -> 
 
 
 def test_run_tests_reports_failures(ctx: ToolContext) -> None:
-    command = f"{sys.executable} -c \"print('1 passed, 2 failed')\""
-    result = run_tests(ctx, command)
+    (ctx.workspace / "test_x.py").write_text("def test_fail():\n    assert 1 == 2\n")
+    result = run_tests(ctx, f"{sys.executable} -m pytest -q test_x.py")
     hint = result.next_action_hint or ""
-    assert "1 passed" in hint
-    assert "2 failed" in hint
+    assert "1 failed" in hint
 
 
 def test_lint_custom_command(ctx: ToolContext) -> None:
-    command = f"{sys.executable} -c \"print('clean')\""
-    result = lint(ctx, command)
+    result = lint(ctx, f"{sys.executable} -m ruff check .")
     assert result.status is ToolStatus.OK
-    assert "clean" in result.output
+
+
+class TestCommandOverrideAllowlist:
+    """command= is restricted to allowlisted test/lint runners (security C1).
+
+    Before the allowlist, `run_tests(command="bash -c 'env'")` executed
+    arbitrary argv as the user with the full parent environment."""
+
+    def test_shell_runner_denied(self, ctx: ToolContext) -> None:
+        result = run_tests(ctx, "bash -c 'echo LEAK: $FLASHMINI_API_KEY'")
+        assert result.status is ToolStatus.DENIED
+        assert "runner not allowed" in result.output
+
+    def test_python_dash_c_denied(self, ctx: ToolContext) -> None:
+        result = run_tests(ctx, f"{sys.executable} -c \"print('3 passed')\"")
+        assert result.status is ToolStatus.DENIED
+
+    def test_network_runner_denied(self, ctx: ToolContext) -> None:
+        result = lint(ctx, "curl --version")
+        assert result.status is ToolStatus.DENIED
+
+    def test_absolute_selector_denied(self, ctx: ToolContext) -> None:
+        result = run_tests(ctx, f"{sys.executable} -m pytest /etc/passwd")
+        assert result.status is ToolStatus.DENIED
+
+    def test_traversal_selector_denied(self, ctx: ToolContext) -> None:
+        result = run_tests(ctx, f"{sys.executable} -m pytest ../outside")
+        assert result.status is ToolStatus.DENIED
+
+    def test_disallowed_flag_denied(self, ctx: ToolContext) -> None:
+        result = run_tests(ctx, f"{sys.executable} -m pytest -p no:cacheprovider")
+        assert result.status is ToolStatus.DENIED
+
+    def test_bare_uv_denied(self, ctx: ToolContext) -> None:
+        result = run_tests(ctx, "uv sync")
+        assert result.status is ToolStatus.DENIED
+
+    def test_ruff_requires_subcommand(self, ctx: ToolContext) -> None:
+        result = lint(ctx, "ruff")
+        assert result.status is ToolStatus.DENIED
+
+    def test_allowlisted_forms_pass_validation(self, ctx: ToolContext) -> None:
+        (ctx.workspace / "test_ok.py").write_text("def test_ok():\n    assert True\n")
+        for command in (
+            "pytest -q test_ok.py",
+            "uv run pytest -q test_ok.py",
+        ):
+            result = run_tests(ctx, command)
+            assert result.status is ToolStatus.OK, command
+        result = lint(ctx, "ruff check .")
+        assert result.status is ToolStatus.OK
 
 
 def test_run_tests_default_degrades_without_project(ctx: ToolContext) -> None:

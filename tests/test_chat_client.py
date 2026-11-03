@@ -24,6 +24,7 @@ class _CaptureHandler(BaseHTTPRequestHandler):
     statuses: list[int] = []
     requests: list[dict] = []
     response: dict = {"choices": [{"message": {"content": "ok"}}]}
+    raw_body: bytes | None = None  # when set, written verbatim (malformed-body tests)
 
     def do_POST(self) -> None:
         length = int(self.headers.get("Content-Length", "0"))
@@ -33,7 +34,11 @@ class _CaptureHandler(BaseHTTPRequestHandler):
         )
         statuses = type(self).statuses
         status = statuses.pop(0) if statuses else 200
-        body = json.dumps(type(self).response).encode()
+        body = (
+            type(self).raw_body
+            if type(self).raw_body is not None
+            else json.dumps(type(self).response).encode()
+        )
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
@@ -48,6 +53,7 @@ class _CaptureHandler(BaseHTTPRequestHandler):
 def capture(monkeypatch: pytest.MonkeyPatch):
     _CaptureHandler.requests = []
     _CaptureHandler.statuses = []
+    _CaptureHandler.raw_body = None
     monkeypatch.setattr(server_module, "_RETRY_DELAYS", (0.01, 0.01))
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), _CaptureHandler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
@@ -110,6 +116,23 @@ class TestRateLimitRetry:
         with pytest.raises(server_module.ServerError):
             client.chat_text([{"role": "user", "content": "hi"}])
         assert len(_CaptureHandler.requests) == 3
+
+
+class TestMalformedBody:
+    def test_non_json_body_raises_server_error(self, capture: str) -> None:
+        """A proxy error page (HTML with status 200) must surface as
+        ServerError — the agent loop only contains ServerError, so a bare
+        JSONDecodeError here would crash the CLI (hygiene-audit Critical)."""
+        _CaptureHandler.raw_body = b"<html>502 Bad Gateway</html>"
+        client = ChatClient(capture, model="test/model", api_key="sk")
+        with pytest.raises(server_module.ServerError, match="malformed response body"):
+            client.chat_text([{"role": "user", "content": "hi"}])
+
+    def test_truncated_json_body_raises_server_error(self, capture: str) -> None:
+        _CaptureHandler.raw_body = b'{"choices": [{"mess'
+        client = ChatClient(capture, model="test/model", api_key="sk")
+        with pytest.raises(server_module.ServerError, match="malformed response body"):
+            client.chat_text([{"role": "user", "content": "hi"}])
 
 
 class TestBaseUrlJoin:
