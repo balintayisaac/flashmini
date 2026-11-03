@@ -77,6 +77,17 @@ UNSEEN_NAME_WARNING = (
     "in this codebase, then correct the file if needed."
 )
 
+INVENTED_NAME_REMINDER = (
+    "STOP guessing spellings. You have now written names that appear NOWHERE in "
+    "the codebase {count} times. Before your next write:\n"
+    "1. Shorten the unknown name to its stem (the first 6-8 characters).\n"
+    "2. grep that stem case-insensitively (case_sensitive=false) across the "
+    "workspace.\n"
+    "3. Copy the EXACT spelling from the grep results into your edit.\n"
+    "If grep finds nothing for the stem, the concept does not exist here — "
+    "re-read the task and the related files instead of inventing more names."
+)
+
 
 def _tokens(text: str) -> set[str]:
     """Lowercased identifier-shaped tokens (length >= 4) for name-evidence checks."""
@@ -225,6 +236,8 @@ class AgentLoop:
         fail_counts: dict[str, int] = {}
         ok_counts: dict[str, int] = {}
         noop_writes: dict[str, int] = {}
+        test_fail_counts: dict[str, int] = {}
+        unseen_write_count = 0
 
         for index in range(self.max_steps):
             if self.deadline_s is not None and time.monotonic() - started_at > self.deadline_s:
@@ -351,6 +364,17 @@ class AgentLoop:
                     "arguments; switch approach: use write_file with the complete "
                     "corrected file content.\n" + message
                 )
+            if tool == "run_tests" and result.status is not ToolStatus.OK:
+                test_fail_counts[signature] = test_fail_counts.get(signature, 0) + 1
+                if test_fail_counts[signature] >= 2:
+                    message = (
+                        "WARNING: the tests have failed "
+                        f"{test_fail_counts[signature]} times after edits. Stop "
+                        "guessing values by trial and error — DERIVE them: read "
+                        "the failing assertion, solve for the exact value the "
+                        "test expects (e.g. expected = f(inputs) ⇒ compute the "
+                        "constant), and write that value.\n" + message
+                    )
             if result.status is not ToolStatus.OK and fail_counts.get(signature, 0) >= 2:
                 message = (
                     f"WARNING: this exact call has now failed "
@@ -406,9 +430,20 @@ class AgentLoop:
                     unknown = sorted((_tokens(written) - vocab) - _NAMED_EXEMPT)[:5]
                     if unknown:
                         unseen_warning = UNSEEN_NAME_WARNING.format(names=", ".join(unknown))
+                        unseen_write_count += 1
             if unseen_warning:
                 message = unseen_warning + "\n" + message
             messages.append({"role": "user", "content": message})
+            if unseen_write_count >= 2:
+                # Prefix warnings were ignored (round 6 typo-hunt: the model
+                # invented 'frobnicate' instead of finding FROBNICATOR).
+                # Escalate: forbid further writes until the name is confirmed.
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": INVENTED_NAME_REMINDER.format(count=unseen_write_count),
+                    }
+                )
             if noop_path is not None and noop_writes[noop_path] >= 3:
                 # Prefix warnings did not break the loop (round 5 implement-spec:
                 # 6 identical no-op writes while tests kept failing). Escalate to
