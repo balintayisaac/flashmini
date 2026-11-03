@@ -48,12 +48,13 @@ DOOM_LOOP_REMINDER = (
     "is not the fix. Do something different, in this order:\n"
     "1. Re-read the most recent failing test output and quote the exact assertion "
     "(input → expected vs actual).\n"
-    "2. Decide what behavior of the code must change to satisfy it.\n"
-    "3. Write the file again with a DIFFERENT implementation (the body must differ "
-    "from what is already there).\n"
-    "4. Run the tests to verify.\n"
-    "If you cannot state what you are changing, read the file and the failing test "
-    "again first."
+    "2. OBSERVE what your code actually computes: add a temporary print() of the "
+    "intermediate values inside the function, then call run_tests with command "
+    '"pytest -s" — printed values appear in the tool output. Compare printed vs '
+    "expected to locate the step that is wrong.\n"
+    "3. Fix that step and write the file with a DIFFERENT implementation.\n"
+    "4. Run the tests to verify, then remove the temporary print().\n"
+    "If you cannot state what you are changing, do step 2 first."
 )
 
 _PLANNING_RE = re.compile(
@@ -373,10 +374,15 @@ class AgentLoop:
                     message = (
                         "WARNING: the tests have failed "
                         f"{test_fail_counts[signature]} times after edits. Stop "
-                        "guessing values by trial and error — DERIVE them: read "
-                        "the failing assertion, solve for the exact value the "
-                        "test expects (e.g. expected = f(inputs) ⇒ compute the "
-                        "constant), and write that value.\n" + message
+                        "guessing values by trial and error. DERIVE the answer: "
+                        "your previous runs are data points — if changing the "
+                        "constant moved the output from A to B while the test "
+                        "wants C, solve for the constant from those numbers "
+                        "instead of sampling a third guess. If the relation is "
+                        "unclear, OBSERVE it: add a temporary print() of the "
+                        "value the function computes, then call run_tests with "
+                        'command "pytest -s" so the actual numbers appear in '
+                        "the tool output.\n" + message
                     )
             if repeat_count >= 1 and not derive_fired:
                 message = (

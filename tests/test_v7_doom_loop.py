@@ -71,6 +71,8 @@ def test_third_identical_noop_write_injects_doom_loop_reminder(tmp_path: Path) -
     assert "3 times" in text
     # It demands a different implementation, not a repeat.
     assert "DIFFERENT implementation" in text
+    # v9: observability teach — print() + pytest -s.
+    assert "pytest -s" in text
 
 
 def test_single_noop_write_does_not_trigger_reminder(tmp_path: Path) -> None:

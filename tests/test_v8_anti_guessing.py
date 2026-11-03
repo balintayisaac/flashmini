@@ -32,6 +32,8 @@ def test_second_failed_run_tests_demands_derivation(tmp_path: Path) -> None:
     last = client.requests[-1][-1]["content"]
     assert "Stop" in last and "guessing values by trial and error" in last
     assert "DERIVE" in last
+    # v9: observability teach — print() + pytest -s to see actual values.
+    assert "pytest -s" in last
 
 
 def test_derive_warning_suppresses_generic_repeat_warnings(tmp_path: Path) -> None:
