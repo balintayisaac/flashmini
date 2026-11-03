@@ -20,6 +20,9 @@ class FakeClient:
         self.requests.append(list(messages))
         return self.replies.pop(0) if self.replies else '{"final": "out of scripted replies"}'
 
+    def chat_result(self, messages: list[dict[str, Any]], **kwargs: Any) -> tuple[str, str | None]:
+        return self.chat_text(messages, **kwargs), "stop"
+
 
 def _registry(tmp_path: Path):
     return build_default_registry(ToolContext(workspace=tmp_path))

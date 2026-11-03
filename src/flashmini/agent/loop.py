@@ -8,6 +8,7 @@ envelopes; the loop never lets a crash escape and never retries forever.
 from __future__ import annotations
 
 import json
+import keyword
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -25,6 +26,13 @@ STDERR_CHARS = 500
 PROTOCOL_REMINDER = (
     'Reply with exactly ONE JSON object: {"tool": "<name>", "args": {...}} '
     'or {"final": "<answer>"}.'
+)
+
+TRUNCATION_REMINDER = (
+    "Your reply was cut off by the max-tokens limit (finish_reason=length), so "
+    "it could not be parsed. Reply with a SMALLER single JSON object: use "
+    "apply_patch with only the changed lines instead of rewriting whole files, "
+    "or split the write across steps. Do not repeat the oversized call."
 )
 
 PLANNING_REMINDER = (
@@ -57,6 +65,14 @@ UNSEEN_NAME_WARNING = (
 def _tokens(text: str) -> set[str]:
     """Lowercased identifier-shaped tokens (length >= 4) for name-evidence checks."""
     return {m.group(0).lower() for m in _TOKEN_RE.finditer(text)}
+
+
+# Language vocabulary is never "unseen evidence": warning on `return None`
+# or keyword boilerplate trained the model to ignore the guard (audit #2).
+_NAMED_EXEMPT = frozenset(
+    set(keyword.kwlist)
+    | {"none", "true", "false", "self", "cls", "args", "kwargs", "result", "value"}
+)
 
 
 @dataclass
@@ -141,7 +157,7 @@ def _compact_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
     result_idx = [
         i
         for i, m in enumerate(messages)
-        if m["role"] == "user" and str(m.get("content", "")).startswith("Tool result")
+        if m["role"] == "user" and "Tool result:" in str(m.get("content", ""))[:200]
     ]
     compact = [dict(m) for m in messages]
     for i in result_idx[:-1]:
@@ -192,7 +208,7 @@ class AgentLoop:
 
         for index in range(self.max_steps):
             try:
-                raw = self.client.chat_text(
+                raw, finish_reason = self.client.chat_result(
                     messages,
                     json_schema=tool_call_schema(names),
                     max_tokens=self.max_tokens,
@@ -203,7 +219,7 @@ class AgentLoop:
                 if "exceeds the available context size" not in str(exc):
                     raise
                 messages = _compact_messages(messages)
-                raw = self.client.chat_text(
+                raw, finish_reason = self.client.chat_result(
                     messages,
                     json_schema=tool_call_schema(names),
                     max_tokens=self.max_tokens,
@@ -215,12 +231,26 @@ class AgentLoop:
                 run.steps.append(step)
                 self._notify(on_step, step)
                 messages.append({"role": "assistant", "content": raw})
-                messages.append({"role": "user", "content": PROTOCOL_REMINDER})
+                if finish_reason == "length":
+                    # An oversized write retries identically forever unless
+                    # the model learns WHY it failed (audit #6).
+                    messages.append({"role": "user", "content": TRUNCATION_REMINDER})
+                else:
+                    messages.append({"role": "user", "content": PROTOCOL_REMINDER})
                 continue
 
             final = data.get("final")
             if isinstance(final, str) and final.strip():
-                if _looks_like_plan(final):
+                # Reject premature planning only when NO tool work has landed
+                # yet (audit #4): "Done. I will not touch the other files"
+                # and completion reports were being discarded, losing real
+                # answers — the guard's job is stopping plans before work,
+                # not rejecting reports after it.
+                saw_ok_work = any(
+                    s.kind == "tool" and s.result is not None and s.result.status is ToolStatus.OK
+                    for s in run.steps
+                )
+                if _looks_like_plan(final) and not saw_ok_work:
                     step = Step(index=index, kind="protocol", raw=raw)
                     run.steps.append(step)
                     self._notify(on_step, step)
@@ -321,6 +351,12 @@ class AgentLoop:
                     "tests (run_tests) or grep for the names the task asks you to "
                     "change, and edit those files.\n" + message
                 )
+            if result.status is ToolStatus.OK:
+                # Evidence comes from every successful tool: read_file and
+                # grep output are where copied names come from (audit #2 —
+                # previously only write/patch summaries fed the vocab, so
+                # nearly every legitimate edit warned).
+                vocab |= _tokens(result.output)
             unseen_warning = ""
             if result.status is ToolStatus.OK and tool in ("write_file", "apply_patch"):
                 # Modifications of existing code must use names with evidence; fresh
@@ -330,15 +366,22 @@ class AgentLoop:
                     if tool == "write_file":
                         written = str(args.get("content", ""))
                     else:
-                        written = "\n".join(
-                            line[1:]
-                            for line in str(args.get("patch", "")).splitlines()
-                            if line.startswith("+") and not line.startswith("+++")
-                        )
-                    unknown = sorted(_tokens(written) - vocab)[:5]
+                        # Skip Add-File sections: those lines are a new file's
+                        # content, not modifications of existing code.
+                        in_add = False
+                        plus: list[str] = []
+                        for line in str(args.get("patch", "")).splitlines():
+                            if line.startswith("*** "):
+                                in_add = line.startswith("*** Add File:")
+                                continue
+                            if in_add:
+                                continue
+                            if line.startswith("+") and not line.startswith("+++"):
+                                plus.append(line[1:])
+                        written = "\n".join(plus)
+                    unknown = sorted((_tokens(written) - vocab) - _NAMED_EXEMPT)[:5]
                     if unknown:
                         unseen_warning = UNSEEN_NAME_WARNING.format(names=", ".join(unknown))
-                vocab |= _tokens(result.output)
             if unseen_warning:
                 message = unseen_warning + "\n" + message
             messages.append({"role": "user", "content": message})

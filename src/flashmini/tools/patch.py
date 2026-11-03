@@ -152,11 +152,22 @@ def parse_patch(text: str) -> list[FileOp]:
         raise PatchError("patch is missing '*** End Patch'")
     if not ops:
         raise PatchError("patch contains no file sections")
+    seen: dict[str, str] = {}
     for op in ops:
         if not op.path:
             raise PatchError(f"empty path in a {op.kind} section")
         if op.kind == "update" and not op.hunks:
             raise PatchError(f"update section for {op.path!r} has no hunks")
+        # Audit: duplicate sections for one path applied out of order (last
+        # write wins silently), and Delete+Update resurrected deleted files.
+        # Reject up front: the model should compose one section per file.
+        prior = seen.get(op.path)
+        if prior is not None:
+            raise PatchError(
+                f"duplicate {op.kind!r} section for {op.path!r} "
+                f"(already has a {prior!r} section); use one section per file"
+            )
+        seen[op.path] = op.kind
     return ops
 
 
@@ -281,7 +292,11 @@ def apply_patch(ctx: ToolContext, patch: str) -> ToolResult:
             else:
                 if not target.is_file():
                     raise PatchError(f"cannot update {op.path!r}: file not found")
-                original = target.read_text(encoding="utf-8", errors="replace")
+                # newline="" keeps \r\n intact so _split_lines can detect and
+                # rejoin the file's own newline style (read_text() would
+                # silently translate CRLF files to LF — audit finding 5).
+                with target.open("r", encoding="utf-8", errors="replace", newline="") as fh:
+                    original = fh.read()
                 updated, fuzz, added, removed = _apply_update(op, original)
                 tag = " (fuzzy match)" if fuzz else ""
                 planned.append(

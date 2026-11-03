@@ -292,12 +292,22 @@ class ChatClient:
 
     def chat_text(self, messages: list[dict[str, Any]], **kwargs: Any) -> str:
         """POST a chat request and return just the assistant text."""
+        return self.chat_result(messages, **kwargs)[0]
+
+    def chat_result(self, messages: list[dict[str, Any]], **kwargs: Any) -> tuple[str, str | None]:
+        """POST a chat request; return (assistant text, finish_reason).
+
+        finish_reason ("stop" / "length" / "tool_calls") lets the agent loop
+        distinguish a truncated reply from a malformed one (audit #6) instead
+        of sending a generic protocol reminder for an oversized write.
+        """
         data = self.chat(messages, **kwargs)
         try:
-            content = data["choices"][0]["message"]["content"]
+            choice = data["choices"][0]
+            content = choice["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
             raise ServerError(f"unexpected chat response shape: {exc}") from exc
-        return str(content or "")
+        return str(content or ""), choice.get("finish_reason")
 
     def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         body = json.dumps(payload).encode("utf-8")

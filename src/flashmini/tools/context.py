@@ -14,6 +14,14 @@ class WorkspaceViolation(Exception):
     """Raised when a tool tries to touch a path outside its workspace."""
 
 
+class PathNotFound(Exception):
+    """Raised by resolve(must_exist=True) for invented paths.
+
+    Distinct from WorkspaceViolation on purpose: the registry maps this to
+    an ``error`` envelope with a look-it-up hint, not a jail ``denied``.
+    """
+
+
 @dataclass
 class ToolContext:
     """Per-instance tool configuration; no global mutable state."""
@@ -43,6 +51,10 @@ class ToolContext:
             raise WorkspaceViolation("this tool context is read-only (writes disabled)")
         if for_write and _inside_git(self.workspace, resolved):
             raise WorkspaceViolation("writes inside .git/ are blocked")
+        if must_exist and not resolved.exists():
+            # Previously only jailed + resolved: an invented path sailed
+            # through and tools reported "no matches" for it (audit #7).
+            raise PathNotFound(raw)
         return resolved
 
 

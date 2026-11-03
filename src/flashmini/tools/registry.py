@@ -13,7 +13,7 @@ from collections.abc import Callable
 from functools import partial
 
 from flashmini.exec import elapsed_ms
-from flashmini.tools.context import ToolContext, WorkspaceViolation
+from flashmini.tools.context import PathNotFound, ToolContext, WorkspaceViolation
 from flashmini.tools.devops import git_ops, lint, run_tests
 from flashmini.tools.files import read_file, write_file
 from flashmini.tools.patch import apply_patch
@@ -56,12 +56,32 @@ class ToolRegistry:
                 duration_ms=elapsed_ms(started),
                 next_action_hint="operate inside the workspace root",
             )
-        except TypeError as exc:
+        except PathNotFound as exc:
             return ToolResult.error(
                 name,
-                f"invalid arguments: {exc}",
+                f"path not found: {exc}",
                 duration_ms=elapsed_ms(started),
-                next_action_hint="check the tool's parameters and retry",
+                next_action_hint=(
+                    "check the spelling; pass its parent directory to read_file to list what exists"
+                ),
+            )
+        except TypeError as exc:
+            # Audit M8: a TypeError raised inside a tool body was reported as
+            # "invalid arguments", sending the model into an argument-fixing
+            # loop. Only binding errors are argument errors.
+            msg = str(exc)
+            if "keyword argument" in msg or ("missing" in msg and "argument" in msg):
+                return ToolResult.error(
+                    name,
+                    f"invalid arguments: {exc}",
+                    duration_ms=elapsed_ms(started),
+                    next_action_hint="check the tool's parameters and retry",
+                )
+            return ToolResult.error(
+                name,
+                f"tool crashed: TypeError: {exc}",
+                duration_ms=elapsed_ms(started),
+                next_action_hint="this is a bug in the tool, not the input",
             )
         except Exception as exc:  # noqa: BLE001 -- containment is the point
             return ToolResult.error(

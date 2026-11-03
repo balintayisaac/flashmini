@@ -1,0 +1,90 @@
+{
+  "stamp": "2026-11-03T00:01:33+00:00",
+  "endpoint": "https://integrate.api.nvidia.com/v1",
+  "model": "mistralai/mistral-large-4-1t-a52b",
+  "model_note": "teacher: mistralai/mistral-large-4-1t-a52b (distill batch)",
+  "passed": 0,
+  "total": 8,
+  "results": [
+    {
+      "name": "distill-slugify",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 400 from llama-server /chat/completions: {\"message\":\"Invalid request\",\"type\":\"Bad Request\",\"code\":400}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.0,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "distill-snake_case",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 400 from llama-server /chat/completions: {\"message\":\"Invalid request\",\"type\":\"Bad Request\",\"code\":400}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.0,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "distill-initials",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 400 from llama-server /chat/completions: {\"message\":\"Invalid request\",\"type\":\"Bad Request\",\"code\":400}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.0,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "distill-mask_secret",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 400 from llama-server /chat/completions: {\"message\":\"Invalid request\",\"type\":\"Bad Request\",\"code\":400}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.0,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "distill-normalize_ws",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 400 from llama-server /chat/completions: {\"message\":\"Invalid request\",\"type\":\"Bad Request\",\"code\":400}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.0,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "distill-filename_safe",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 400 from llama-server /chat/completions: {\"message\":\"Invalid request\",\"type\":\"Bad Request\",\"code\":400}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.0,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "distill-cap_words",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 400 from llama-server /chat/completions: {\"message\":\"Invalid request\",\"type\":\"Bad Request\",\"code\":400}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.0,
+      "final": null,
+      "steps": []
+    },
+    {
+      "name": "distill-reverse_words",
+      "passed": false,
+      "detail": "crashed: ServerError: HTTP 400 from llama-server /chat/completions: {\"message\":\"Invalid request\",\"type\":\"Bad Request\",\"code\":400}",
+      "tool_calls": 0,
+      "tools_used": [],
+      "wall_s": 0.0,
+      "final": null,
+      "steps": []
+    }
+  ]
+}

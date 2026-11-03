@@ -45,6 +45,9 @@ class OverflowClient:
             return '{"final": "out of scripted replies"}'
         return self.replies.pop(0)
 
+    def chat_result(self, messages: list[dict[str, Any]], **kwargs: Any) -> tuple[str, str | None]:
+        return self.chat_text(messages, **kwargs), "stop"
+
 
 class TestEnvelopeTrim:
     def test_long_output_keeps_head_and_tail_with_marker(self) -> None:
