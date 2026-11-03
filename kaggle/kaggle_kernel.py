@@ -88,7 +88,9 @@ def _resolve_traces_path() -> str:
     )
 
 
-TRACES_PATH = _resolve_traces_path()
+# TRACES_PATH is resolved lazily inside load_mix(): resolving at import time
+# raises FileNotFoundError on machines without a mounted traces file (e.g.
+# when this module is loaded by unit tests) and is unnecessary in kernels.
 
 BASE_MODEL = "unsloth/Qwen3.5-4B"
 GATE_REPO = "balintayisaac/flashmini-ultra"  # pull happens via `kaggle kernels output`
@@ -125,7 +127,7 @@ def load_mix() -> Dataset:  # noqa: F821
     ensure_model_cached(BASE_MODEL)
     tok = retry_hf("tokenizer(load_mix)", lambda: AutoTokenizer.from_pretrained(BASE_MODEL))
 
-    ours = load_dataset("json", data_files=TRACES_PATH, split="train")
+    ours = load_dataset("json", data_files=_resolve_traces_path(), split="train")
     ours = ours.remove_columns([c for c in ours.column_names if c != "messages"])
 
     parts = [ours]
@@ -135,15 +137,33 @@ def load_mix() -> Dataset:  # noqa: F821
         for row in stream:
             if len(kept) >= n:
                 break
+            msgs = row.get("messages")
+            if not _valid_messages(msgs):
+                continue
             try:
-                tok.apply_chat_template(row["messages"], tokenize=False)
+                tok.apply_chat_template(msgs, tokenize=False)
             except Exception:
                 continue  # template-incompatible row: skip, count later
-            kept.append({"messages": row["messages"]})
-        parts.append(Dataset.from_list(kept))
+            kept.append({"messages": msgs})
+        if kept:
+            parts.append(Dataset.from_list(kept))
 
     blended = concatenate_datasets(parts).shuffle(seed=42)
     return blended
+
+
+def _valid_messages(msgs: object) -> bool:
+    """True iff msgs is a non-empty list of dicts each carrying a role.
+
+    UltraData rows with string messages pass apply_chat_template (a bare
+    string = single user turn) and poison Dataset.from_list with a mixed
+    list/non-list column (v5 ArrowInvalid), so type-check first.
+    """
+    return (
+        isinstance(msgs, list)
+        and bool(msgs)
+        and all(isinstance(m, dict) and "role" in m for m in msgs)
+    )
 
 
 MIX_CACHE = "/kaggle/working/mix.jsonl"
