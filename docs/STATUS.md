@@ -12,8 +12,8 @@ The deterministic tool layer, the local-model runtime, and the agent loop that d
 | 1.1 | Environment foundation (uv, pytest, ruff, pyright, CI) | Done — CI green |
 | 1.2 | Tool layer: 8 tools, normalized envelope, workspace jail, atomic patching | Done — 64 tests, smoke 10/10 |
 | 1.3 | Model benchmark (Qwen3.5-4B vs Nanbeige4.2-3B vs Nemotron-Bolt) | **Done — winner: Qwen3.5-4B MTP, 4.2 tok/s, all gates pass** (`docs/decisions.md`) |
-| 2 | Agent loop + CLI | In progress — runtime + agent loop + CLI landed; AgentBench v0 rounds: 7/8 → **8/8 → 8/8**; v1 hard-core suite: 3/5 → **5/5**; 13-task round 5: **13/13**; 18-task v2 suite first exposure 3/5 → **5/5** after v10 guards + prompt reorder; round 7 = **17/18** |
-| 3 | Frontier distillation + cloud SFT | In progress — teacher-solve harness over spec corpus (**8/8** verified NIM trajectories, nemotron-3-ultra); UltraData mix (98 SFT samples incl distill); Kaggle kernel v4 (QLoRA→merge→MTP-reinject→GGUF), blocked on Kaggle account internet verification (DNS dead in-kernel) |
+| 2 | Agent loop + CLI | In progress — runtime + agent loop + CLI landed; AgentBench v0 rounds: 7/8 → **8/8 → 8/8**; v1 hard-core suite: 3/5 → **5/5**; 13-task round 5: **13/13**; 18-task v2 suite first exposure 3/5 → **5/5** after v10 guards + prompt reorder; rounds 5–8 (18-task) = **17/16/16/17**; round 8 (16-step v9) = **17/18** pre-SFT baseline |
+| 3 | Frontier distillation + cloud SFT | In progress — teacher-solve harness over spec corpus (**8/8** verified NIM trajectories, nemotron-3-ultra); UltraData mix (98 SFT samples incl distill); Kaggle internet verified; kernel v6 (QLoRA→merge→MTP-reinject→GGUF) live as flashmini-ultra-sft-v6 — mount-glob resolver, _valid_messages ArrowInvalid guard, lazy TRACES_PATH |
 
 The agent loop now exists and drives the tool layer end-to-end: the model
 must answer with exactly one JSON object per turn (a tool call or a final
@@ -52,7 +52,7 @@ Properties that are tested, not assumed:
 ## Verify it yourself
 
 ```sh
-make check        # ruff + format check + pyright + 179 tests
+make check        # ruff + format check + pyright + 192 tests
 make smoke        # dogfoods all 8 tools against this repository
 make smoke-agent  # live: the real model drives the agent loop (slow, minutes)
 ```
@@ -74,7 +74,7 @@ errors, display-format detection, bare-identifier grep hints, step budget).
 The first full 13-task round scored 12/13; two probe iterations later the
 loop-level guards (successful-repeat warning, unseen-identifier guard,
 no-op-write detection) closed the last gap and round 5 scored
-**13/13 (100%)** — see `decisions.md` for the v1→v8 iteration story.
+**13/13 (100%)**; after the 18-task expansion, rounds 5–8 scored **17/16/16/17** pre-SFT (best 17/18) — see `decisions.md` for the v1→v9 iteration story (v8 anti-guessing, v9 observability).
 The suite then expanded to 18 tasks (refactor-sig, debug-cross,
 implement-spec, config-recovery, pipeline) probing axes the original
 suite never touched: signature redesigns, cause-not-symptom debugging,
