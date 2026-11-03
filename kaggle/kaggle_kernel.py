@@ -64,7 +64,31 @@ def ensure_model_cached(repo_id: str) -> None:
     retry_hf(f"snapshot_download({repo_id})", lambda: snapshot_download(repo_id))
 
 
-TRACES_PATH = os.environ.get("TRACES_PATH", "/kaggle/input/flashmini-traces/flashmini_traces.jsonl")
+def _resolve_traces_path() -> str:
+    """Kaggle changed dataset mounts from /kaggle/input/<slug>/ to
+    /kaggle/input/datasets/<owner>/<slug>/ (empirically verified 2026-11-03
+    with a mount-diag kernel; both v4 runs failed identically, so this is a
+    layout change, not a propagation race). Never hardcode: glob for the
+    file wherever it is."""
+    env = os.environ.get("TRACES_PATH")
+    if env and os.path.exists(env):
+        return env
+    import glob as _g
+
+    for pattern in (
+        "/kaggle/input/**/flashmini_traces.jsonl",
+        "/content/flashmini_traces.jsonl",
+    ):
+        hits = sorted(_g.glob(pattern, recursive=True))
+        if hits:
+            print(f"[ultra] traces found at {hits[0]}")
+            return hits[0]
+    raise FileNotFoundError(
+        "flashmini_traces.jsonl not found under /kaggle/input/** or /content"
+    )
+
+
+TRACES_PATH = _resolve_traces_path()
 
 BASE_MODEL = "unsloth/Qwen3.5-4B"
 GATE_REPO = "balintayisaac/flashmini-ultra"  # pull happens via `kaggle kernels output`
