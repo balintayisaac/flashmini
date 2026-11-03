@@ -112,6 +112,9 @@ def main() -> None:
     ap.add_argument("--base-url", default=DEFAULT_BASE_URL)
     ap.add_argument("--max-steps", type=int, default=MAX_STEPS)
     ap.add_argument("--limit", type=int, default=len(spec_corpus.TEMPLATES))
+    ap.add_argument(
+        "--only", default="", help="comma-separated template names to (re)run"
+    )
     args = ap.parse_args()
 
     api_key = os.environ.get("FLASHMINI_API_KEY", "")
@@ -119,6 +122,9 @@ def main() -> None:
         raise SystemExit("FLASHMINI_API_KEY is not set — refusing to run")
 
     names = spec_corpus.all_template_names()[: args.limit]
+    if args.only:
+        wanted = [s.strip() for s in args.only.split(",") if s.strip()]
+        names = [n for n in names if n in wanted]
     client = ChatClient(base_url=args.base_url, model=args.model, api_key=api_key)
     tmp_root = Path(tempfile.mkdtemp(prefix="spec-corpus-", dir="/tmp/opencode"))
 

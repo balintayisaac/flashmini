@@ -1,0 +1,89 @@
+{
+  "stamp": "2026-11-03T00:37:04+00:00",
+  "endpoint": "https://integrate.api.nvidia.com/v1",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "model_note": "teacher: nvidia/nemotron-3-ultra-550b-a55b (distill batch)",
+  "passed": 1,
+  "total": 1,
+  "results": [
+    {
+      "name": "distill-normalize_ws",
+      "passed": true,
+      "detail": "spec-corpus pytest grade",
+      "tool_calls": 5,
+      "tools_used": [
+        "read_file",
+        "grep",
+        "read_file",
+        "write_file",
+        "run_tests"
+      ],
+      "wall_s": 45.8,
+      "final": "Created app/normalize_ws.py with the normalize_ws function that collapses runs of whitespace characters into a single space and strips the ends. All 3 tests pass.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "SPEC.md"
+          },
+          "status": "ok",
+          "output": "     1: # SPEC: normalize_ws\n     2: \n     3: Implement `normalize_ws(s: str) -> str` in `app/normalize_ws.py`:\n     4: \n     5: collapse every run of whitespace characters (spaces, tabs, newlines) into a single space and strip the ends.\n     6: \n     7: Examples:\n     8: \n     9: - 'a\\n  b\\t c' -> 'a b c'\n    10: - 'already fine' -> 'already fine'\n    11: - '   ' -> ''",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "normalize_ws",
+            "path": "."
+          },
+          "status": "ok",
+          "output": "SPEC.md:1:# SPEC: normalize_ws\nSPEC.md:3:Implement `normalize_ws(s: str) -> str` in `app/normalize_ws.py`:\ntests/test_normalize_ws.py:1:from app.normalize_ws import normalize_ws\ntests/test_normalize_ws.py:5:    assert normalize_ws('a\\n  b\\t c') == 'a b c'\ntests/test_normalize_ws.py:8:    assert normalize_ws('already fine') == 'already fine'\ntests/test_normalize_ws.py:11:    assert normalize_ws('   ') == ''",
+          "hint": "python fallback scan (slower); install ripgrep for full speed"
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "tests/test_normalize_ws.py"
+          },
+          "status": "ok",
+          "output": "     1: from app.normalize_ws import normalize_ws\n     2: \n     3: \n     4: def test_case_0():\n     5:     assert normalize_ws('a\\n  b\\t c') == 'a b c'\n     6: \n     7: def test_case_1():\n     8:     assert normalize_ws('already fine') == 'already fine'\n     9: \n    10: def test_case_2():\n    11:     assert normalize_ws('   ') == ''",
+          "hint": null
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "app/normalize_ws.py",
+            "content": "import re\n\ndef normalize_ws(s: str) -> str:\n    \"\"\"Collapse every run of whitespace characters into a single space and strip the ends.\"\"\"\n    return re.sub(r'\\s+', ' ', s).strip()\n"
+          },
+          "status": "ok",
+          "output": "wrote 180 chars to app/normalize_ws.py",
+          "hint": null
+        },
+        {
+          "index": 4,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {
+            "command": "pytest tests/test_normalize_ws.py -v"
+          },
+          "status": "ok",
+          "output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.17, pytest-9.2.0, pluggy-1.7.0\nrootdir: /tmp/opencode/spec-corpus-b3bjnlk7/normalize_ws\nconfigfile: pyproject.toml\ncollected 3 items\n\ntests/test_normalize_ws.py ...                                           [100%]\n\n============================== 3 passed in 0.01s ===============================\n",
+          "hint": "3 passed, 0 failed"
+        },
+        {
+          "index": 5,
+          "kind": "final",
+          "raw": "{\"final\": \"Created app/normalize_ws.py with the normalize_ws function that collapses runs of whitespace characters into a single space and strips the ends. All 3 tests pass.\"}"
+        }
+      ]
+    }
+  ]
+}
