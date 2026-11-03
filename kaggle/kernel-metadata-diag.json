@@ -1,0 +1,1 @@
+{"id": "isaacgbalintay/flashmini-egress-diag", "language": "python", "kernel_type": "script", "code_file": "kaggle_diag.py", "enable_gpu": false, "enable_internet": true, "dataset_sources": [], "title": "FlashMini egress diag", "is_private": true}

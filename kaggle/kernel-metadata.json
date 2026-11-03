@@ -1,13 +1,1 @@
-{
-  "id": "isaacgbalintay/flashmini-ultra-sft",
-  "language": "python",
-  "kernel_type": "script",
-  "code_file": "kaggle_kernel.py",
-  "enable_gpu": true,
-  "enable_internet": true,
-  "dataset_sources": [
-    "isaacgbalintay/flashmini-traces"
-  ],
-  "title": "FlashMini Ultra SFT v1",
-  "is_private": true
-}
+{"id": "isaacgbalintay/flashmini-ultra-sft", "language": "python", "kernel_type": "script", "code_file": "kaggle_kernel.py", "enable_gpu": true, "enable_internet": true, "dataset_sources": ["isaacgbalintay/flashmini-traces"], "title": "FlashMini Ultra SFT v4", "is_private": true}
