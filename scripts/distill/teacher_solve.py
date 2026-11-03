@@ -23,6 +23,7 @@ import argparse
 import json
 import os
 import sys
+import tempfile
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -39,7 +40,7 @@ sys.path.insert(0, str(REPO / "scripts" / "distill"))
 import spec_corpus  # noqa: E402
 
 DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1"
-DEFAULT_MODEL = "deepseek-ai/deepseek-v4.1-flash"
+DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b"
 MAX_STEPS = 12
 STEP_OUTPUT_CHARS = 600
 STEP_RAW_CHARS = 300
@@ -119,14 +120,28 @@ def main() -> None:
 
     names = spec_corpus.all_template_names()[: args.limit]
     client = ChatClient(base_url=args.base_url, model=args.model, api_key=api_key)
-    tmp_root = Path(f"/tmp/opencode/spec-corpus-{int(time.time())}")
-    tmp_root.mkdir(parents=True, exist_ok=True)
+    tmp_root = Path(tempfile.mkdtemp(prefix="spec-corpus-", dir="/tmp/opencode"))
 
     results = []
     for i, name in enumerate(names, 1):
         print(f"[teacher_solve] ({i}/{len(names)}) {name} ...", flush=True)
         try:
-            row = solve_one(name, client, args.max_steps, tmp_root)
+            row = None
+            # Two attempts: transient upstream errors (HTTP 502/503, timeouts)
+            # are common on hosted endpoints — retry once before recording FAIL.
+            for attempt in (1, 2):
+                try:
+                    row = solve_one(name, client, args.max_steps, tmp_root)
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    if attempt == 2:
+                        raise
+                    print(
+                        f"[teacher_solve]   attempt {attempt} failed "
+                        f"({type(exc).__name__}: {str(exc)[:120]}) — retrying",
+                        flush=True,
+                    )
+                    time.sleep(10)
         except Exception as exc:  # noqa: BLE001 — record and continue the batch
             row = {
                 "name": f"distill-{name}",
@@ -138,6 +153,7 @@ def main() -> None:
                 "final": None,
                 "steps": [],
             }
+        assert row is not None  # unreachable: both loop paths assign it
         results.append(row)
         print(
             f"[teacher_solve]   {'PASS' if row['passed'] else 'FAIL'} "
@@ -149,6 +165,7 @@ def main() -> None:
     out = {
         "stamp": datetime.now(UTC).isoformat(timespec="seconds"),
         "endpoint": args.base_url,
+        "model": args.model,
         "model_note": f"teacher: {args.model} (distill batch)",
         "passed": passed,
         "total": len(results),

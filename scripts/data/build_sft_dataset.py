@@ -55,10 +55,27 @@ def _load_agentbench() -> ModuleType:
     return module
 
 
+def _load_teacher_solve() -> ModuleType:
+    path = REPO / "scripts" / "distill" / "teacher_solve.py"
+    spec = importlib.util.spec_from_file_location("_teacher_solve_for_sft", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def load_task_prompts() -> dict[str, str]:
-    """Task name → prompt text, from the live bench definitions."""
+    """Task name → prompt text, from the live bench + distill definitions."""
     agentbench = _load_agentbench()
-    return {t.name: t.prompt for t in agentbench.TASKS}
+    prompts = {t.name: t.prompt for t in agentbench.TASKS}
+    teacher = _load_teacher_solve()
+    # Distill rows are named "distill-<template>"; their user prompt is the
+    # same deterministic task_prompt() the teacher run sent.  Without this
+    # mapping every distill trajectory would be silently dropped (audit C1).
+    for template_name, _, _, _, _ in teacher.spec_corpus.TEMPLATES:
+        prompts[f"distill-{template_name}"] = teacher.task_prompt(template_name)
+    return prompts
 
 
 def load_system_prompt() -> str:
@@ -120,6 +137,8 @@ def collect_samples(
     task_prompts = load_task_prompts()
     system = load_system_prompt()
     stats = {
+        "files_read": 0,
+        "rows_absorbed": 0,
         "passed_runs": 0,
         "excluded_failed": 0,
         "excluded_protocol": 0,
@@ -130,7 +149,9 @@ def collect_samples(
     samples: list[dict[str, object]] = []
     seen: set[tuple[str, str]] = set()
 
-    for path in sorted(results_dir.glob("agentbench-*.json")):
+    paths = sorted([*results_dir.glob("agentbench-*.json"), *results_dir.glob("distill-*.json")])
+    for path in paths:
+        stats["files_read"] += 1
         payload = json.loads(path.read_text())
         for result in payload.get("results", []):
             if not result.get("passed"):
@@ -163,8 +184,16 @@ def collect_samples(
             seen.add(key)
             sample["source"] = path.name
             samples.append(sample)
+            stats["rows_absorbed"] += 1
 
     stats["samples"] = len(samples)
+    if paths and not samples:
+        # Loud, not silent: green logs with zero samples is the C1 failure mode.
+        print(
+            f"WARNING: read {stats['files_read']} result file(s) but absorbed "
+            f"0 samples — check task-prompt mapping and exclusion rules",
+            file=sys.stderr,
+        )
     return samples, stats
 
 
