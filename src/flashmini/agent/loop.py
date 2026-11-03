@@ -41,6 +41,21 @@ PLANNING_REMINDER = (
     '{"tool": "<name>", "args": {...}}. Use "final" only for the finished, verified result.'
 )
 
+DOOM_LOOP_REMINDER = (
+    "STOP re-writing the same file. You have now sent identical content to {path} "
+    "{count} times and the write was a no-op every time — the file already contains "
+    "exactly those bytes, so this write can never change anything. The repeated write "
+    "is not the fix. Do something different, in this order:\n"
+    "1. Re-read the most recent failing test output and quote the exact assertion "
+    "(input → expected vs actual).\n"
+    "2. Decide what behavior of the code must change to satisfy it.\n"
+    "3. Write the file again with a DIFFERENT implementation (the body must differ "
+    "from what is already there).\n"
+    "4. Run the tests to verify.\n"
+    "If you cannot state what you are changing, read the file and the failing test "
+    "again first."
+)
+
 _PLANNING_RE = re.compile(
     r"\b(i need to|i will|i[’']ll|let me|i am going to|i[’']m going to|"
     r"first,? (i|we)|next,? (i|we)|start by|i should|i plan to)\b",
@@ -354,10 +369,11 @@ class AgentLoop:
                 message = (
                     f"WARNING: you have now written identical content to {noop_path} "
                     f"{noop_writes[noop_path]} times — the file already has exactly "
-                    "this content, so repeating this write can never help. Treat "
-                    f"{noop_path} as done; the remaining work is elsewhere: run the "
-                    "tests (run_tests) or grep for the names the task asks you to "
-                    "change, and edit those files.\n" + message
+                    "this content, so repeating this write can never help. If the "
+                    "tests still fail, THIS CONTENT IS NOT THE FIX: change the "
+                    "implementation logic itself (different body), then run_tests; "
+                    "if the work is elsewhere, run the tests or grep for the names "
+                    "the task asks you to change and edit those files.\n" + message
                 )
             if result.status is ToolStatus.OK:
                 # Evidence comes from every successful tool: read_file and
@@ -393,6 +409,18 @@ class AgentLoop:
             if unseen_warning:
                 message = unseen_warning + "\n" + message
             messages.append({"role": "user", "content": message})
+            if noop_path is not None and noop_writes[noop_path] >= 3:
+                # Prefix warnings did not break the loop (round 5 implement-spec:
+                # 6 identical no-op writes while tests kept failing). Escalate to
+                # a user-role instruction that demands a different behavior.
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": DOOM_LOOP_REMINDER.format(
+                            path=noop_path, count=noop_writes[noop_path]
+                        ),
+                    }
+                )
 
         return run  # step budget exhausted without a final answer
 

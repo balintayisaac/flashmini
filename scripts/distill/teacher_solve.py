@@ -112,9 +112,7 @@ def main() -> None:
     ap.add_argument("--base-url", default=DEFAULT_BASE_URL)
     ap.add_argument("--max-steps", type=int, default=MAX_STEPS)
     ap.add_argument("--limit", type=int, default=len(spec_corpus.TEMPLATES))
-    ap.add_argument(
-        "--only", default="", help="comma-separated template names to (re)run"
-    )
+    ap.add_argument("--only", default="", help="comma-separated template names to (re)run")
     args = ap.parse_args()
 
     api_key = os.environ.get("FLASHMINI_API_KEY", "")

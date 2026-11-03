@@ -71,7 +71,9 @@ def test_noop_writes_escalate_to_look_elsewhere(tmp_path: Path) -> None:
     loop = AgentLoop(_registry(tmp_path), client)
     loop.run("task")
     last = client.requests[-1][-1]["content"]
-    assert "remaining work is elsewhere" in last
+    # v7 wording: if tests still fail on this file, the repeated content is
+    # NOT the fix — change the implementation; otherwise look elsewhere.
+    assert "THIS CONTENT IS NOT THE FIX" in last
     assert "run_tests" in last
     assert "a.txt" in last
 
