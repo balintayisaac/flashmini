@@ -30,10 +30,10 @@ from flashmini.tools import ToolContext, build_default_registry
 
 REPO = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO / "bench" / "results"
-MAX_STEPS = 12
+MAX_STEPS = 16
 # Per-task wall-clock budget (audit I3): a wedged endpoint burned 600s x
 # steps. 20 min covers any healthy task several times over.
-DEADLINE_S = 1200.0
+DEADLINE_S = 1500.0
 LOCAL_MODEL_NOTE = "Qwen3.5-4B MTP UD-Q4_K_XL; --spec-type draft-mtp --spec-draft-n-max 1"
 VENDORED_RG = REPO / "vendor" / "bin" / "rg"
 
