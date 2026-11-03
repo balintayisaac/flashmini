@@ -1,0 +1,438 @@
+{
+  "stamp": "20261103-083834",
+  "endpoint": "local llama-server",
+  "model_note": "v6-audit-fixes probe",
+  "passed": 5,
+  "total": 5,
+  "pass_rate": 1.0,
+  "results": [
+    {
+      "name": "bug-hunt",
+      "passed": true,
+      "detail": "pytest rc=0 (1 passed in 0.00s); agent tools=['run_tests', 'read_file']",
+      "tool_calls": 5,
+      "tools_used": [
+        "run_tests",
+        "read_file",
+        "read_file",
+        "write_file",
+        "run_tests"
+      ],
+      "wall_s": 164.8,
+      "final": "Fixed the bug in app/scan.py: changed `if v < result:` to `if v > result:`. The function was incorrectly finding the smallest value instead of the biggest.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {
+            "command": "pytest"
+          },
+          "status": "error",
+          "output": "F                                                                        [100%]\n=================================== FAILURES ===================================\nE   assert 3 == 9\n     +  where 3 = biggest([3, 9, 4])\n/tmp/opencode/agentbench-bug-hunt-fcknq78o/tests/test_scan.py:5: assert 3 == 9\n=========================== short test summary info ============================\nFAILED tests/test_scan.py::test_biggest - assert 3 == 9\n1 failed in 0.01s\n",
+          "hint": "0 passed, 1 failed; inspect the first failure and fix it"
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "tests/test_scan.py"
+          },
+          "status": "ok",
+          "output": "     1: from app.scan import biggest\n     2: \n     3: \n     4: def test_biggest():\n     5:     assert biggest([3, 9, 4]) == 9",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "app/scan.py"
+          },
+          "status": "ok",
+          "output": "     1: def biggest(values):\n     2:     result = values[0]\n     3:     for v in values:\n     4:         if v < result:\n     5:             result = v\n     6:     return result",
+          "hint": null
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "app/scan.py",
+            "content": "def biggest(values):\n    result = values[0]\n    for v in values:\n        if v > result:\n            result = v\n    return result"
+          },
+          "status": "ok",
+          "output": "wrote 128 chars to app/scan.py (backup: .flashmini/backups/20261103-084047/app/scan.py)",
+          "hint": null
+        },
+        {
+          "index": 4,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {
+            "command": "pytest"
+          },
+          "status": "ok",
+          "output": ".                                                                        [100%]\n1 passed in 0.01s\n",
+          "hint": "1 passed, 0 failed"
+        },
+        {
+          "index": 5,
+          "kind": "final",
+          "raw": "{\"final\": \"Fixed the bug in app/scan.py: changed `if v < result:` to `if v > result:`. The function was incorrectly finding the smallest value instead of the biggest.\"}"
+        }
+      ]
+    },
+    {
+      "name": "multi-file",
+      "passed": true,
+      "detail": "pytest rc=0 (2 passed in 0.01s); rename_clean=True",
+      "tool_calls": 12,
+      "tools_used": [
+        "grep",
+        "read_file",
+        "read_file",
+        "apply_patch",
+        "apply_patch",
+        "write_file",
+        "write_file",
+        "run_tests",
+        "write_file",
+        "write_file",
+        "read_file",
+        "read_file"
+      ],
+      "wall_s": 276.0,
+      "final": null,
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "calc",
+            "case_sensitive": false
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-multi-file-wdtrext5/lib/pricing.py:1:def calc(base, rate):\n/tmp/opencode/agentbench-multi-file-wdtrext5/app/main.py:1:from lib.pricing import calc\n/tmp/opencode/agentbench-multi-file-wdtrext5/app/main.py:5:    return calc(x, 2)",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "lib/pricing.py"
+          },
+          "status": "ok",
+          "output": "     1: def calc(base, rate):\n     2:     return base * rate",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "app/main.py"
+          },
+          "status": "ok",
+          "output": "     1: from lib.pricing import calc\n     2: \n     3: \n     4: def total(x):\n     5:     return calc(x, 2)",
+          "hint": null
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "apply_patch",
+          "args": {
+            "patch": "*** Begin Patch\n*** Update File: lib/pricing.py\n@@\n-     1: def calc(base, rate):\n+     1: def compute(base, rate):\n*** End Patch\n*** Begin Patch\n*** Update File: app/main.py\n@@\n-     1: from lib.pricing import calc\n+     1: from lib.pricing import compute\n-     5:     return calc(x, 2)\n+     5:     return compute(x, 2)\n*** End Patch"
+          },
+          "status": "error",
+          "output": "hunk does not match 'lib/pricing.py': no exact or whitespace-fuzzy match found\nThe hunk contains read_file display formatting (line numbers/tabs); write ONLY the raw file text.\nNearest raw file content:\n  'def calc(base, rate):'\n  '    return base * rate'\n\nExpected format:\n*** Begin Patch\n*** Update File: example.py\n@@\n-old line\n+new line\n*** End Patch",
+          "hint": "rewrite the patch in the shown format and retry; no files were changed"
+        },
+        {
+          "index": 4,
+          "kind": "tool",
+          "tool": "apply_patch",
+          "args": {
+            "patch": "*** Begin Patch\n*** Update File: lib/pricing.py\n@@\ndef calc(base, rate):\n+def compute(base, rate):\n*** End Patch\n*** Begin Patch\n*** Update File: app/main.py\n@@\nfrom lib.pricing import calc\n+from lib.pricing import compute\n\n\ndef total(x):\n-    return calc(x, 2)\n+    return compute(x, 2)\n*** End Patch"
+          },
+          "status": "error",
+          "output": "cannot parse patch line: 'def calc(base, rate):'\n\nExpected format:\n*** Begin Patch\n*** Update File: example.py\n@@\n-old line\n+new line\n*** End Patch",
+          "hint": "rewrite the patch in the shown format and retry; no files were changed"
+        },
+        {
+          "index": 5,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "lib/pricing.py",
+            "content": "def compute(base, rate):\n    return base * rate"
+          },
+          "status": "ok",
+          "output": "wrote 47 chars to lib/pricing.py (backup: .flashmini/backups/20261103-084418/lib/pricing.py)",
+          "hint": null
+        },
+        {
+          "index": 6,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "app/main.py",
+            "content": "from lib.pricing import compute\n\n\ndef total(x):\n    return compute(x, 2)"
+          },
+          "status": "ok",
+          "output": "wrote 72 chars to app/main.py (backup: .flashmini/backups/20261103-084440/app/main.py)",
+          "hint": null
+        },
+        {
+          "index": 7,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {
+            "command": "pytest"
+          },
+          "status": "ok",
+          "output": "..                                                                       [100%]\n2 passed in 0.01s\n",
+          "hint": "2 passed, 0 failed"
+        },
+        {
+          "index": 8,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "lib/pricing.py",
+            "content": "def compute(base, rate):\n    return base * rate"
+          },
+          "status": "ok",
+          "output": "no changes: lib/pricing.py content is identical to what was written",
+          "hint": "your write changed nothing; if you intended a fix, the old content is still in place \u2014 make the actual edit"
+        },
+        {
+          "index": 9,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "app/main.py",
+            "content": "from lib.pricing import compute\n\n\ndef total(x):\n    return compute(x, 2)"
+          },
+          "status": "ok",
+          "output": "no changes: app/main.py content is identical to what was written",
+          "hint": "your write changed nothing; if you intended a fix, the old content is still in place \u2014 make the actual edit"
+        },
+        {
+          "index": 10,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "lib/pricing.py"
+          },
+          "status": "ok",
+          "output": "     1: def compute(base, rate):\n     2:     return base * rate",
+          "hint": null
+        },
+        {
+          "index": 11,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "app/main.py"
+          },
+          "status": "ok",
+          "output": "     1: from lib.pricing import compute\n     2: \n     3: \n     4: def total(x):\n     5:     return compute(x, 2)",
+          "hint": null
+        }
+      ]
+    },
+    {
+      "name": "adapt-recovery",
+      "passed": true,
+      "detail": "file='[app]\\nname = demo\\ntimeout_s = 10\\n[cache]\\nsize_mb = 64'",
+      "tool_calls": 3,
+      "tools_used": [
+        "read_file",
+        "write_file",
+        "read_file"
+      ],
+      "wall_s": 59.6,
+      "final": "The [cache] section has been added to settings.ini with size_mb = 64. The file has been verified and contains all existing lines unchanged plus the new section.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "settings.ini"
+          },
+          "status": "ok",
+          "output": "     1: [app]\n     2: name = demo\n     3: timeout_s = 10",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "settings.ini",
+            "content": "[app]\nname = demo\ntimeout_s = 10\n[cache]\nsize_mb = 64"
+          },
+          "status": "ok",
+          "output": "wrote 53 chars to settings.ini (backup: .flashmini/backups/20261103-084639/settings.ini)",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "settings.ini"
+          },
+          "status": "ok",
+          "output": "     1: [app]\n     2: name = demo\n     3: timeout_s = 10\n     4: [cache]\n     5: size_mb = 64",
+          "hint": null
+        },
+        {
+          "index": 3,
+          "kind": "final",
+          "raw": "{\"final\": \"The [cache] section has been added to settings.ini with size_mb = 64. The file has been verified and contains all existing lines unchanged plus the new section.\"}"
+        }
+      ]
+    },
+    {
+      "name": "write-test",
+      "passed": true,
+      "detail": "pytest rc=0 (2 passed in 0.00s); test_defs=2; used_run_tests=True",
+      "tool_calls": 3,
+      "tools_used": [
+        "write_file",
+        "write_file",
+        "run_tests"
+      ],
+      "wall_s": 109.5,
+      "final": "Created tests/test_mean.py with two test cases (normal case and single-value edge case) and verified both pass.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "tests/test_mean.py",
+            "content": "import pytest\nfrom app.stats import mean\n\n\ndef test_mean_normal_case():\n    \"\"\"Test mean with a normal list of numbers.\"\"\"\n    result = mean([1, 2, 3, 4, 5])\n    assert result == 3.0\n\n\ndef test_mean_single_value():\n    \"\"\"Test mean with a single value.\"\"\"\n    result = mean([42])\n    assert result == 42.0\n"
+          },
+          "status": "error",
+          "output": "parent directory does not exist: /tmp/opencode/agentbench-write-test-e3csxu_i/tests",
+          "hint": "pass create_parents=True to create missing directories"
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "tests/test_mean.py",
+            "content": "import pytest\nfrom app.stats import mean\n\n\ndef test_mean_normal_case():\n    \"\"\"Test mean with a normal list of numbers.\"\"\"\n    result = mean([1, 2, 3, 4, 5])\n    assert result == 3.0\n\n\ndef test_mean_single_value():\n    \"\"\"Test mean with a single value.\"\"\"\n    result = mean([42])\n    assert result == 42.0\n",
+            "create_parents": true
+          },
+          "status": "ok",
+          "output": "wrote 306 chars to tests/test_mean.py",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "run_tests",
+          "args": {
+            "command": "pytest tests/test_mean.py"
+          },
+          "status": "ok",
+          "output": "..                                                                       [100%]\n2 passed in 0.01s\n",
+          "hint": "2 passed, 0 failed"
+        },
+        {
+          "index": 3,
+          "kind": "final",
+          "raw": "{\"final\": \"Created tests/test_mean.py with two test cases (normal case and single-value edge case) and verified both pass.\"}"
+        }
+      ]
+    },
+    {
+      "name": "typo-hunt",
+      "passed": true,
+      "detail": "greps=3; fixed=True; bad_left=False",
+      "tool_calls": 5,
+      "tools_used": [
+        "grep",
+        "grep",
+        "read_file",
+        "write_file",
+        "grep"
+      ],
+      "wall_s": 101.2,
+      "final": "The misspelled identifier FROBNICATER has been fixed in /tmp/opencode/agentbench-typo-hunt-dh7mcgi0/c.py. The correct spelling FROBNICATOR (as defined in a.py) was used. Verification with grep confirms no matches for FROBNICATER remain.",
+      "steps": [
+        {
+          "index": 0,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "FROBNICATER"
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-dh7mcgi0/c.py:1:value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 1,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "frob",
+            "case_sensitive": false
+          },
+          "status": "ok",
+          "output": "/tmp/opencode/agentbench-typo-hunt-dh7mcgi0/a.py:1:FROBNICATOR = True\n/tmp/opencode/agentbench-typo-hunt-dh7mcgi0/b.py:1:from a import FROBNICATOR\n/tmp/opencode/agentbench-typo-hunt-dh7mcgi0/c.py:1:value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 2,
+          "kind": "tool",
+          "tool": "read_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-typo-hunt-dh7mcgi0/c.py"
+          },
+          "status": "ok",
+          "output": "     1: value = FROBNICATER",
+          "hint": null
+        },
+        {
+          "index": 3,
+          "kind": "tool",
+          "tool": "write_file",
+          "args": {
+            "path": "/tmp/opencode/agentbench-typo-hunt-dh7mcgi0/c.py",
+            "content": " value = FROBNICATOR"
+          },
+          "status": "ok",
+          "output": "wrote 20 chars to /tmp/opencode/agentbench-typo-hunt-dh7mcgi0/c.py (backup: .flashmini/backups/20261103-084958/c.py)",
+          "hint": null
+        },
+        {
+          "index": 4,
+          "kind": "tool",
+          "tool": "grep",
+          "args": {
+            "pattern": "FROBNICATER"
+          },
+          "status": "ok",
+          "output": "no matches",
+          "hint": "pattern not found; retry with a shorter pattern (e.g. just the bare identifier), a broader regex, or case_sensitive=false"
+        },
+        {
+          "index": 5,
+          "kind": "final",
+          "raw": "{\"final\": \"The misspelled identifier FROBNICATER has been fixed in /tmp/opencode/agentbench-typo-hunt-dh7mcgi0/c.py. The correct spelling FROBNICATOR (as defined in a.py) was used. Verification with grep confirms no matches for FROBNICATER remain.\"}"
+        }
+      ]
+    }
+  ]
+}
