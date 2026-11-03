@@ -25,6 +25,35 @@ _REPLIES = [
 ]
 
 
+def test_doom_counter_resets_after_real_fix(tmp_path: Path) -> None:
+    """Audit I3: a changing write to the path clears its doom history — a
+    later repeated identical write must NOT produce a false 'no-op every
+    time' claim (which could make the model discard a correct fix)."""
+    fixed = "def f():\n    return 2\n"
+    client = FakeClient(
+        [
+            json.dumps({"tool": "write_file", "args": {"path": "m.py", "content": SAME}}),
+            json.dumps({"tool": "write_file", "args": {"path": "m.py", "content": SAME}}),
+            json.dumps({"tool": "write_file", "args": {"path": "m.py", "content": SAME}}),
+            json.dumps({"tool": "write_file", "args": {"path": "m.py", "content": SAME}}),
+            # 3 no-ops → doom fired. Model then produces the real fix:
+            json.dumps({"tool": "write_file", "args": {"path": "m.py", "content": fixed}}),
+            # ...and re-sends it once (the exact mistake doom guards against):
+            json.dumps({"tool": "write_file", "args": {"path": "m.py", "content": fixed}}),
+            json.dumps({"final": "done"}),
+        ]
+    )
+    loop = AgentLoop(build_default_registry(ToolContext(workspace=tmp_path)), client)
+    loop.run("fix m.py")
+
+    reminders = [m for m in client.requests[-1] if "STOP re-writing" in m["content"]]
+    assert len(reminders) == 1, (
+        "doom reminder must fire once (legitimately) and NOT again after the "
+        f"real fix; got {len(reminders)}"
+    )
+    assert "3 times" in reminders[0]["content"]
+
+
 def test_third_identical_noop_write_injects_doom_loop_reminder(tmp_path: Path) -> None:
     client = FakeClient(list(_REPLIES))
     loop = AgentLoop(build_default_registry(ToolContext(workspace=tmp_path)), client)

@@ -34,6 +34,63 @@ def test_second_failed_run_tests_demands_derivation(tmp_path: Path) -> None:
     assert "DERIVE" in last
 
 
+def test_derive_warning_suppresses_generic_repeat_warnings(tmp_path: Path) -> None:
+    """Audit I2: when the derive warning fires for run_tests, the generic
+    'identical call already failed' / 'this exact call has now failed'
+    warnings must NOT stack on top (warning wall)."""
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "m.py").write_text("RATE = 1\n")
+    client = FakeClient(
+        [
+            json.dumps({"tool": "run_tests", "args": {}}),
+            json.dumps({"tool": "run_tests", "args": {}}),
+            json.dumps({"final": "done"}),
+        ]
+    )
+    loop = AgentLoop(build_default_registry(ToolContext(workspace=tmp_path)), client)
+    loop.run("fix the rate")
+
+    last = client.requests[-1][-1]["content"]
+    assert "DERIVE" in last  # v8 warning fired (2nd failed run_tests)
+    assert "identical call already failed" not in last
+    assert "this exact call has now failed" not in last
+
+
+def test_derive_counter_resets_after_green_run(tmp_path: Path) -> None:
+    """Audit M1: a passing run_tests clears the trial-and-error counter —
+    after green, a single new failure must NOT claim a stale streak."""
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "m.py").write_text("RATE = 1\n")
+    client = FakeClient(
+        [
+            json.dumps({"tool": "run_tests", "args": {}}),  # fail 1 (no tests: rc 5)
+            json.dumps({"tool": "run_tests", "args": {}}),  # fail 2 → derive fires
+            json.dumps(
+                {
+                    "tool": "write_file",
+                    "args": {"path": "test_ok.py", "content": "def test_ok():\n    assert True\n"},
+                }
+            ),
+            json.dumps({"tool": "run_tests", "args": {}}),  # green → reset
+            json.dumps(
+                {
+                    "tool": "write_file",
+                    "args": {"path": "test_ok.py", "content": "def test_ok():\n    assert False\n"},
+                }
+            ),
+            json.dumps({"tool": "run_tests", "args": {}}),  # new streak fail 1
+            json.dumps({"final": "done"}),
+        ]
+    )
+    loop = AgentLoop(build_default_registry(ToolContext(workspace=tmp_path)), client)
+    loop.run("fix the rate")
+
+    last = client.requests[-1][-1]["content"]
+    assert "guessing values by trial and error" not in last, (
+        "stale counter must not fire the derive warning after a green run"
+    )
+
+
 def test_second_unseen_name_write_escalates(tmp_path: Path) -> None:
     (tmp_path / "lib.py").write_text("KNOWN_NAME = True\n")
     client = FakeClient(

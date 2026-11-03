@@ -184,7 +184,11 @@ def _compact_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
     result_idx = [
         i
         for i, m in enumerate(messages)
-        if m["role"] == "user" and "Tool result:" in str(m.get("content", ""))[:200]
+        # 400-char window: teaching warnings (derive/noop/unseen) stack up to
+        # ~410 chars BEFORE the "Tool result:" marker — a 200-char window made
+        # decorated failed-test envelopes invisible to compaction (audit I1),
+        # and those are the largest recurring messages in these tasks.
+        if m["role"] == "user" and "Tool result:" in str(m.get("content", ""))[:400]
     ]
     compact = [dict(m) for m in messages]
     for i in result_idx[:-1]:
@@ -343,6 +347,11 @@ class AgentLoop:
             ):
                 noop_path = str(args.get("path", "the file"))
                 noop_writes[noop_path] = noop_writes.get(noop_path, 0) + 1
+            elif tool == "write_file" and result.status is ToolStatus.OK:
+                # A real changing write: any doom-loop history for this path is
+                # resolved (a stale count would fire a false "identical content"
+                # claim after the model has already fixed the file — audit I3).
+                noop_writes.pop(str(args.get("path", "")), None)
             if tool == "apply_patch":
                 patch_failures = 0 if result.status is ToolStatus.OK else patch_failures + 1
             message = "Tool result:\n" + envelope_message(result)
@@ -353,7 +362,23 @@ class AgentLoop:
                     "you have (make the edit or give the answer), or change "
                     "strategy.\n" + message
                 )
-            if repeat_count >= 1:
+            if tool == "run_tests" and result.status is ToolStatus.OK:
+                # Green run: the trial-and-error history is resolved (audit M1).
+                test_fail_counts.pop(signature, None)
+            derive_fired = False
+            if tool == "run_tests" and result.status is not ToolStatus.OK:
+                test_fail_counts[signature] = test_fail_counts.get(signature, 0) + 1
+                if test_fail_counts[signature] >= 2:
+                    derive_fired = True
+                    message = (
+                        "WARNING: the tests have failed "
+                        f"{test_fail_counts[signature]} times after edits. Stop "
+                        "guessing values by trial and error — DERIVE them: read "
+                        "the failing assertion, solve for the exact value the "
+                        "test expects (e.g. expected = f(inputs) ⇒ compute the "
+                        "constant), and write that value.\n" + message
+                    )
+            if repeat_count >= 1 and not derive_fired:
                 message = (
                     f"WARNING: identical call already failed {repeat_count} time(s). "
                     "Do not repeat it; change the arguments or the approach.\n" + message
@@ -364,18 +389,11 @@ class AgentLoop:
                     "arguments; switch approach: use write_file with the complete "
                     "corrected file content.\n" + message
                 )
-            if tool == "run_tests" and result.status is not ToolStatus.OK:
-                test_fail_counts[signature] = test_fail_counts.get(signature, 0) + 1
-                if test_fail_counts[signature] >= 2:
-                    message = (
-                        "WARNING: the tests have failed "
-                        f"{test_fail_counts[signature]} times after edits. Stop "
-                        "guessing values by trial and error — DERIVE them: read "
-                        "the failing assertion, solve for the exact value the "
-                        "test expects (e.g. expected = f(inputs) ⇒ compute the "
-                        "constant), and write that value.\n" + message
-                    )
-            if result.status is not ToolStatus.OK and fail_counts.get(signature, 0) >= 2:
+            if (
+                result.status is not ToolStatus.OK
+                and not derive_fired
+                and fail_counts.get(signature, 0) >= 2
+            ):
                 message = (
                     f"WARNING: this exact call has now failed "
                     f"{fail_counts[signature]} times in this task (calls in between "
