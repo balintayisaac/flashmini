@@ -423,3 +423,33 @@ trajectories land in bench-JSON schema and the dataset builder absorbs
 them as verified samples — including implement-spec, the measured
 FlashMini weak spot, which the teacher solved in our exact protocol
 shape. Dataset: 119 passing runs → 92 unique verified samples (was 85).
+
+## 2026-11-03 — v6: audit-hardening probe 5/5; round 5 (full 13) pending
+
+Four parallel read-only audits (security; tests/hygiene; bench/distill;
+agent-core) produced 1 Critical + ~15 Important findings; all fixed and
+pinned by tests (179 passing, +26). Security essentials: `run_tests`/
+`lint` `command=` overrides were unauthenticated arbitrary-exec — now
+allowlisted runners (pytest/python -m pytest/uv run …/ruff) with fixed
+flag sets; subprocesses get an allowlisted env (API keys withheld) and
+captured output is secret-scrubbed before it can reach committed bench
+JSONs; read_file/search fallbacks are byte-bounded (OOM DoS closed);
+patch parser rejects duplicate path sections; CRLF preserved through
+update hunks; loop compaction sees WARNING-decorated results; unseen-
+name guard learns from every OK tool result; planning guard only
+requires evidence before the *first* plan (completion reports after
+work are accepted); parse-failure recovery distinguishes
+finish_reason=length (truncation reminder) from protocol drift.
+
+**v6 probe (5 hard tasks): 5/5** — baseline 3/5 (agentbench-
+20261103-083834.json). multi-file: 276 s, 12 steps — greps the bare
+identifier first (learned), two teaching-hinted apply_patch failures,
+write_file fallback, then two no-op writes caught by the no-op hint.
+typo-hunt: 101 s, 5 steps — case-insensitive grep from step 0 (v4
+teaching stuck). bug-hunt 165 s, adapt-recovery 60 s, write-test
+110 s all clean.
+
+Teacher flywheel: nemotron-3-ultra-550b NIM verified 8/8 spec-corpus
+trajectories (mistral-large returns content=None under our JSON
+protocol → 400s; gpt-oss-20b times out; DS4.1-flash emits raw DSML).
+SFT dataset now 98 verified samples incl. 6 distill.
