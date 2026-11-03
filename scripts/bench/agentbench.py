@@ -31,6 +31,9 @@ from flashmini.tools import ToolContext, build_default_registry
 REPO = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO / "bench" / "results"
 MAX_STEPS = 12
+# Per-task wall-clock budget (audit I3): a wedged endpoint burned 600s x
+# steps. 20 min covers any healthy task several times over.
+DEADLINE_S = 1200.0
 LOCAL_MODEL_NOTE = "Qwen3.5-4B MTP UD-Q4_K_XL; --spec-type draft-mtp --spec-draft-n-max 1"
 VENDORED_RG = REPO / "vendor" / "bin" / "rg"
 
@@ -621,7 +624,10 @@ class TaskResult:
 
 
 def run_suite(
-    client: ChatClient, only: list[str] | None = None, verbose: bool = False
+    client: ChatClient,
+    only: list[str] | None = None,
+    verbose: bool = False,
+    on_result: Callable[[TaskResult], None] | None = None,
 ) -> list[TaskResult]:
     if VENDORED_RG.exists():
         os.environ.setdefault("FLASHMINI_RG", str(VENDORED_RG))
@@ -632,14 +638,49 @@ def run_suite(
             prefix=f"agentbench-{task.name}-", dir="/tmp/opencode"
         ) as td:
             ws = Path(td)
-            task.setup(ws)
+            # Snapshot the files the prompt forbids touching (SPEC.md and any
+            # existing tests). A grader that only checks pytest cannot see a
+            # "fixed" test file — audit I9 (debugcross/config already do
+            # byte-comparison; this generalizes it).
+            protected = {
+                p.relative_to(ws): p.read_bytes()
+                for p in sorted(ws.rglob("*"))
+                if p.is_file()
+                and ".flashmini" not in p.parts
+                and (p.name == "SPEC.md" or p.name.startswith("test_"))
+            }
+            try:
+                task.setup(ws)
+            except Exception as exc:  # noqa: BLE001 — setup crash is a task failure
+                results.append(
+                    TaskResult(
+                        name=task.name,
+                        passed=False,
+                        detail=f"setup crashed: {type(exc).__name__}: {exc}",
+                        tool_calls=0,
+                        tools_used=[],
+                        wall_s=0.0,
+                        final=None,
+                        steps=[],
+                    )
+                )
+                if on_result is not None:
+                    on_result(results[-1])
+                continue
             registry = build_default_registry(ToolContext(workspace=ws))
-            loop = AgentLoop(registry, client, max_steps=MAX_STEPS)
+            loop = AgentLoop(registry, client, max_steps=MAX_STEPS, deadline_s=DEADLINE_S)
             run: AgentRun | None = None
             start = time.monotonic()
             try:
                 run = loop.run(task.prompt)
                 passed, detail = task.grade(ws, run)
+                tampered = sorted(
+                    rel
+                    for rel, data in protected.items()
+                    if not (ws / rel).exists() or (ws / rel).read_bytes() != data
+                )
+                if tampered and passed:
+                    passed, detail = False, f"TAMPERED protected files: {tampered}"
             except Exception as exc:  # noqa: BLE001 — a crashed task is a failed task
                 passed, detail = False, f"crashed: {type(exc).__name__}: {exc}"
             wall = time.monotonic() - start
@@ -668,7 +709,15 @@ def run_suite(
                         print(f"        -> {s.result.status.value}: {out_s!r} hint={hint_s!r}")
                     else:
                         print(f"    [{s.index}] {s.kind}: {s.raw[:160]!r}")
+            if on_result is not None:
+                on_result(results[-1])
     return results
+
+
+def _llama_server_running() -> bool:
+    """True when a llama-server process is already alive (audit I2 preflight)."""
+    probe = subprocess.run(["pgrep", "-f", "[l]lama-server"], capture_output=True, text=True)
+    return probe.returncode == 0
 
 
 def main() -> int:
@@ -689,8 +738,54 @@ def main() -> int:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("%Y%m%d-%H%M%S")
 
+    # One-model-in-RAM preflight (audit I2): LlamaServer spawns with
+    # start_new_session, so an OOM-killed bench leaves an orphan server that
+    # silently double-loads the next run. Refuse rather than poison (mirrors
+    # mtp_sweep.check_clear).
+    if _llama_server_running():
+        print(
+            "REFUSING: a llama-server process is already running — one model "
+            "in RAM at a time. Kill it (pkill -f '[l]lama-server') and retry.",
+            file=sys.stderr,
+        )
+        return 2
+
+    # Incremental + atomic persistence (audit I1): rewrite the summary after
+    # EVERY task so a mid-suite crash (OOM, SIGINT, power) keeps completed
+    # measurements and a torn write can't corrupt the JSON.
+    out = RESULTS_DIR / f"agentbench-{stamp}.json"
+    while out.exists():  # second-resolution stamps can collide (audit minor)
+        stamp = f"{stamp}-r"
+        out = RESULTS_DIR / f"agentbench-{stamp}.json"
+    summary: dict[str, object] = {
+        "stamp": stamp,
+        "endpoint": None,
+        "model_note": None,
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0.0,
+        "results": [],
+    }
+
+    def persist() -> None:
+        tmp = out.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(summary, indent=2) + "\n")
+        os.replace(tmp, out)
+
+    acc: list[TaskResult] = []
+
+    def on_result(result: TaskResult) -> None:
+        acc.append(result)
+        summary["passed"] = sum(1 for r in acc if r.passed)
+        summary["total"] = len(acc)
+        summary["pass_rate"] = round(summary["passed"] / len(acc), 3)  # type: ignore[operator]
+        summary["results"] = [r.__dict__ for r in acc]  # type: ignore[assignment]
+        persist()
+
     if args.base_url:
         note = args.model_note or "remote endpoint"
+        summary["model_note"] = note
+        summary["endpoint"] = args.base_url
         print(f"AgentBench v0 — endpoint: {args.base_url} ({note})")
         results = run_suite(
             ChatClient(
@@ -700,27 +795,33 @@ def main() -> int:
             ),
             only,
             args.verbose,
+            on_result=on_result,
         )
         endpoint = args.base_url
     else:
         note = args.model_note or LOCAL_MODEL_NOTE
+        summary["model_note"] = note
+        summary["endpoint"] = "local llama-server"
         print(f"AgentBench v0 — local winner model ({note})")
         with LlamaServer(workspace=REPO) as server:
-            results = run_suite(ChatClient(base_url=server.base_url), only, args.verbose)
+            results = run_suite(ChatClient(base_url=server.base_url), only, args.verbose, on_result)
         endpoint = "local llama-server"
 
+    if not results:
+        print("no tasks matched --only; nothing to run", file=sys.stderr)
+        return 2
+
     passed = sum(1 for r in results if r.passed)
-    summary = {
-        "stamp": stamp,
-        "endpoint": endpoint,
-        "model_note": note,
-        "passed": passed,
-        "total": len(results),
-        "pass_rate": round(passed / len(results), 3),
-        "results": [r.__dict__ for r in results],
-    }
-    out = RESULTS_DIR / f"agentbench-{stamp}.json"
-    out.write_text(json.dumps(summary, indent=2) + "\n")
+    summary.update(
+        {
+            "endpoint": endpoint,
+            "passed": passed,
+            "total": len(results),
+            "pass_rate": round(passed / len(results), 3),
+            "results": [r.__dict__ for r in results],
+        }
+    )
+    persist()
 
     print()
     print(f"AgentBench v0: {passed}/{len(results)} passed ({summary['pass_rate']:.0%})")

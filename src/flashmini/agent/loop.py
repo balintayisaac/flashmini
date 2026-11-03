@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import keyword
 import re
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -179,11 +180,14 @@ class AgentLoop:
         *,
         max_steps: int = MAX_STEPS_DEFAULT,
         max_tokens: int = MAX_TOKENS_DEFAULT,
+        deadline_s: float | None = None,
     ) -> None:
         self.registry = registry
         self.client = client
         self.max_steps = max_steps
         self.max_tokens = max_tokens
+        # Wall-clock budget: a wedged endpoint burned 600s x steps (audit I3).
+        self.deadline_s = deadline_s
 
     def run(self, task: str, on_step: Callable[[Step], None] | None = None) -> AgentRun:
         names = self.registry.names()
@@ -192,6 +196,7 @@ class AgentLoop:
             {"role": "user", "content": task},
         ]
         run = AgentRun(task=task, final=None, finished=False, steps=[])
+        started_at = time.monotonic()
         last_fail_sig: str | None = None
         repeat_count = 0
         patch_failures = 0
@@ -207,6 +212,9 @@ class AgentLoop:
         noop_writes: dict[str, int] = {}
 
         for index in range(self.max_steps):
+            if self.deadline_s is not None and time.monotonic() - started_at > self.deadline_s:
+                # Honest exhaustion: no final, finished=False (audit I3).
+                break
             try:
                 raw, finish_reason = self.client.chat_result(
                     messages,

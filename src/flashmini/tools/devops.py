@@ -163,7 +163,7 @@ def git_ops(ctx: ToolContext, op: str, args: list[str] | None = None) -> ToolRes
     """Run one allowlisted git command inside the workspace."""
     started = time.monotonic()
     tool = "git_ops"
-    args = list(args or [])
+    args = [args] if isinstance(args, str) else list(args or [])
     if op not in _GIT_OPS:
         return ToolResult.denied(
             tool,
