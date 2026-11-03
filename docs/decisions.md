@@ -453,3 +453,22 @@ Teacher flywheel: nemotron-3-ultra-550b NIM verified 8/8 spec-corpus
 trajectories (mistral-large returns content=None under our JSON
 protocol → 400s; gpt-oss-20b times out; DS4.1-flash emits raw DSML).
 SFT dataset now 98 verified samples incl. 6 distill.
+
+## 2026-11-03 — v7: doom-loop escalation; round 5 = 17/18; implement-spec fixed
+
+Round 5 (full 18-task suite): **17/18** — implement-spec died in a
+doom loop: after two failing test runs it re-wrote byte-identical
+content to app/slug.py six times; the v10 no-op prefix warning ("the
+remaining work is elsewhere") gave wrong advice for the case where the
+failing tests are about the very file being re-written.
+
+v7: (a) the >=2 no-op warning now says "if the tests still fail, THIS
+CONTENT IS NOT THE FIX — change the implementation logic itself";
+(b) at the 3rd identical no-op write the loop injects a user-role
+DOOM_LOOP_REMINDER: quote the failing assertion, decide what behavior
+must change, write a DIFFERENT implementation, run_tests. Pinned by
+tests/test_v7_doom_loop.py (181 total).
+
+Remeasure: implement-spec **PASS 351.9 s** — trace shows genuine
+iteration ('n-a' → 'hello--world' → 4/4 green), no repeated content.
+Round 6 (full confirmation) running.
