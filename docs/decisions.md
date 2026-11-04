@@ -505,3 +505,15 @@ arguments(str, json.dumps'd)}}]} — uniform by construction. Local
 retention on real rows: 1500 kept / 1508 streamed (~99.5%), 0 template
 exceptions, from_list OK on 1500 rows. Kernel
 isaacgbalintay/flashmini-ultra-sft-v7 is the first run carrying this fix.
+
+**v8 (concat alignment)**: v7 cleared ArrowInvalid but died next at
+`concatenate_datasets(parts)`: the raw traces part inferred messages as
+List({role, content}) with no tool_calls key at all (our 98 verified
+trajectories serialize tool use INSIDE content), while cleaned corpus
+parts always carry tool_calls — "features can't be aligned". v8 routes
+the traces through the same _clean_messages + apply_chat_template path
+and builds EVERY part with explicit canonical features (_msg_features).
+Verified locally: raw concat reproduces the exact v7 ValueError;
+canonical concat succeeds (incl. all-None tool_calls casting to
+List(struct), not Value('null')). Kernel
+isaacgbalintay/flashmini-ultra-sft-v8 is live.
