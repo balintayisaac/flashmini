@@ -4,7 +4,10 @@ The module imports cleanly without torch/datasets (heavy imports live
 inside function bodies). _clean_messages is the v7 crash fix: it
 canonicalizes UltraData chat rows to uniform {role, content, tool_calls}
 messages (subfield type mixing crashed Dataset.from_list with ArrowInvalid
-in the v5/v6 kernels).
+in the v5/v6 kernels). _msg_features + from_list(features=...) is the v8
+crash fix: raw trace rows (no tool_calls key) and cleaned corpus rows
+inferred divergent messages features, which made concatenate_datasets
+raise "features can't be aligned" in the v7 kernel.
 """
 
 from __future__ import annotations
@@ -199,3 +202,89 @@ class TestArrowUniformity:
             ]
         )
         assert ds.num_rows == 2
+
+
+class TestBlendAlignment:
+    """The v7 crash: concatenate_datasets requires identical features.
+
+    Our traces carry messages WITHOUT a tool_calls key (tool use is
+    serialized inside content), so the raw traces part inferred
+    List({role, content}) while cleaned corpus parts inferred
+    List({role, content, tool_calls: List(...)}) — "features can't be
+    aligned". Fix (v8): every part is built with explicit canonical
+    features from _msg_features(). (Needs datasets.)
+    """
+
+    @staticmethod
+    def _canon():
+        pytest.importorskip("datasets")
+        return kaggle_kernel._msg_features()
+
+    @staticmethod
+    def _traces_like_rows():
+        """Mirror the real 98-trace shape: {role, content} only."""
+        return [
+            {
+                "messages": [
+                    {"role": "system", "content": "You are FlashMini."},
+                    {"role": "user", "content": "implement spec"},
+                    {"role": "assistant", "content": '{"tool": "read_file", "args": {}}'},
+                ]
+            },
+            {
+                "messages": [
+                    {"role": "user", "content": "fix the bug"},
+                    {"role": "assistant", "content": "done"},
+                ]
+            },
+        ]
+
+    @staticmethod
+    def _corpus_like_rows():
+        """Mirror plan-B-cleaned corpus rows: tool_calls always present."""
+        cleaned = _clean(
+            [
+                {"role": "user", "content": "task"},
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [
+                        {"type": "function", "function": {"name": "f", "arguments": {"x": 1}}}
+                    ],
+                },
+                {"role": "tool", "content": "result"},
+                {"role": "assistant", "content": "done"},
+            ]
+        )
+        assert cleaned is not None
+        return [{"messages": cleaned}]
+
+    def test_v7_alignment_crash_reproduced(self):
+        datasets = pytest.importorskip("datasets")
+        traces = datasets.Dataset.from_list(self._traces_like_rows())
+        corpus = datasets.Dataset.from_list(self._corpus_like_rows())
+        with pytest.raises(Exception, match="can't be aligned"):
+            datasets.concatenate_datasets([traces, corpus])
+
+    def test_canonical_features_align_traces_and_corpus(self):
+        datasets = pytest.importorskip("datasets")
+        canon = self._canon()
+        traces = datasets.Dataset.from_list(self._traces_like_rows(), features=canon)
+        corpus = datasets.Dataset.from_list(self._corpus_like_rows(), features=canon)
+        blended = datasets.concatenate_datasets([traces, corpus]).shuffle(seed=42)
+        assert blended.num_rows == 3
+        # trace messages gain the tool_calls key (None) via canonicalization
+        assert blended[0]["messages"][0]["tool_calls"] is None
+        assert set(blended[0]["messages"][0].keys()) == {"role", "content", "tool_calls"}
+        # corpus messages keep their tool_calls structure
+        has_tc = any(m["tool_calls"] is not None for row in blended for m in row["messages"])
+        assert has_tc
+
+    def test_all_none_tool_calls_casts_to_canonical(self):
+        """The traces part has zero tool_calls; from_list must still build
+        the List(struct) schema instead of Value('null')."""
+        datasets = pytest.importorskip("datasets")
+        canon = self._canon()
+        traces = datasets.Dataset.from_list(self._traces_like_rows(), features=canon)
+        tc_feature = traces.features["messages"].feature["tool_calls"]
+        assert not isinstance(tc_feature, datasets.Value)

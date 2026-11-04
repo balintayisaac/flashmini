@@ -111,6 +111,38 @@ def assistant_only_supported(chat_template: str | None) -> bool:
     return bool(chat_template) and "{% generation %}" in chat_template
 
 
+def _msg_features():
+    """Canonical Arrow features shared by EVERY blended part.
+
+    concatenate_datasets requires byte-identical features across parts.
+    Inference alone diverges (v7 crash): our traces carry no tool_calls
+    key at all (tool use is serialized inside content), while cleaned
+    corpus rows always do; and an all-None tool_calls column would infer
+    Value('null') where the corpus infers List(struct). Building every
+    part with these explicit features makes the schema identical by
+    construction — verified locally: raw concat raises the exact v7
+    "features can't be aligned" ValueError, canonical concat succeeds.
+    """
+    from datasets import Features, Value
+
+    return Features(
+        {
+            "messages": [
+                {
+                    "role": Value("string"),
+                    "content": Value("string"),
+                    "tool_calls": [
+                        {
+                            "type": Value("string"),
+                            "function": {"name": Value("string"), "arguments": Value("string")},
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
+
 def load_mix() -> Dataset:  # noqa: F821
     """Blend verified FlashMini traces with a streamed corpus subset.
 
@@ -119,17 +151,39 @@ def load_mix() -> Dataset:  # noqa: F821
     (per-sample template kwargs are not supported by SFTTrainer) —
     documented limitation, revisit if the gate shows tool-format errors.
     Rows that fail template rendering are filtered, not crashed on.
+
+    v8: the traces are routed through the same _clean_messages +
+    apply_chat_template path as the corpus, and every part is built with
+    explicit canonical features (_msg_features) — the raw traces part
+    inferred List({role, content}) with no tool_calls key, which made
+    concatenate_datasets raise "features can't be aligned" in v7.
     """
     from datasets import Dataset, concatenate_datasets, load_dataset
     from transformers import AutoTokenizer
 
     ensure_model_cached(BASE_MODEL)
     tok = retry_hf("tokenizer(load_mix)", lambda: AutoTokenizer.from_pretrained(BASE_MODEL))
+    canon = _msg_features()
 
-    ours = load_dataset("json", data_files=_resolve_traces_path(), split="train")
-    ours = ours.remove_columns([c for c in ours.column_names if c != "messages"])
+    ours_raw = load_dataset("json", data_files=_resolve_traces_path(), split="train")
+    ours_rows = []
+    for row in ours_raw:
+        clean = _clean_messages(row.get("messages"))
+        if clean is None:
+            continue
+        try:
+            tok.apply_chat_template(clean, tokenize=False)
+        except Exception:
+            continue
+        ours_rows.append({"messages": clean})
+    print(
+        f"[ultra] traces kept {len(ours_rows)}/{len(ours_raw)} rows (cleaned, canonical features)"
+    )
 
-    parts = [ours]
+    parts: list[Dataset] = []
+    if ours_rows:
+        parts.append(Dataset.from_list(ours_rows, features=canon))
+
     for config, n in MIX.items():
         stream = load_dataset(CORPUS, config, split="train", streaming=True)
         kept = []
@@ -145,7 +199,7 @@ def load_mix() -> Dataset:  # noqa: F821
                 continue  # template-incompatible row: skip, count later
             kept.append({"messages": clean})
         if kept:
-            parts.append(Dataset.from_list(kept))
+            parts.append(Dataset.from_list(kept, features=canon))
 
     blended = concatenate_datasets(parts).shuffle(seed=42)
     return blended
