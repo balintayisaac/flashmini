@@ -13,7 +13,7 @@ The deterministic tool layer, the local-model runtime, and the agent loop that d
 | 1.2 | Tool layer: 8 tools, normalized envelope, workspace jail, atomic patching | Done — 64 tests, smoke 10/10 |
 | 1.3 | Model benchmark (Qwen3.5-4B vs Nanbeige4.2-3B vs Nemotron-Bolt) | **Done — winner: Qwen3.5-4B MTP, 4.2 tok/s, all gates pass** (`docs/decisions.md`) |
 | 2 | Agent loop + CLI | In progress — runtime + agent loop + CLI landed; AgentBench v0 rounds: 7/8 → **8/8 → 8/8**; v1 hard-core suite: 3/5 → **5/5**; 13-task round 5: **13/13**; 18-task v2 suite first exposure 3/5 → **5/5** after v10 guards + prompt reorder; rounds 5–8 (18-task) = **17/16/16/17**; round 8 (16-step v9) = **17/18** pre-SFT baseline |
-| 3 | Frontier distillation + cloud SFT | In progress — teacher-solve harness over spec corpus (**8/8** verified NIM trajectories, nemotron-3-ultra); UltraData mix (98 SFT samples incl distill); Kaggle internet verified; kernel v6 (QLoRA→merge→MTP-reinject→GGUF) live as flashmini-ultra-sft-v6 — mount-glob resolver, _valid_messages ArrowInvalid guard, lazy TRACES_PATH |
+| 3 | Frontier distillation + cloud SFT | In progress — teacher-solve harness over spec corpus (**8/8** verified NIM trajectories, nemotron-3-ultra); UltraData mix (98 SFT samples incl distill); Kaggle internet verified; kernel v7 (QLoRA→merge→MTP-reinject→GGUF) live as flashmini-ultra-sft-v7 — mount-glob resolver, _clean_messages canonicalization (subfield type mixing → ArrowInvalid, v5/v6), lazy TRACES_PATH |
 
 The agent loop now exists and drives the tool layer end-to-end: the model
 must answer with exactly one JSON object per turn (a tool call or a final

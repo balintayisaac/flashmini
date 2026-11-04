@@ -490,3 +490,18 @@ ceiling on multi-constraint string logic. Prompt iteration stops here;
 the 98 verified SFT trajectories (incl. correct implement-spec) are the
 designed fix. Full 18-task round 8 = official pre-SFT baseline the
 trained model must beat.
+
+**Cloud SFT kernel v5→v7 (the ArrowInvalid saga)**: v5/v6 kernels died in
+the blend stage at `Dataset.from_list(kept)` with pyarrow "cannot mix
+list and non-list, non-null values". Evidence chain: synthetic repros
+proved both tool_calls list-vs-dict and content str-vs-list shapes
+trigger it; a live census + offender hunt over UltraData-SFT-Agent-2609
+proved the corpus mixes subfield types across rows (tool_calls items
+carry `function.parameters.properties` as JSON string vs decoded struct,
+plus optional `description`/`positional` keys). v7 fix = plan-B
+`_clean_messages` canonicalization: every kept message becomes exactly
+{role: str, content: str, tool_calls: None or [{type, function: {name,
+arguments(str, json.dumps'd)}}]} — uniform by construction. Local
+retention on real rows: 1500 kept / 1508 streamed (~99.5%), 0 template
+exceptions, from_list OK on 1500 rows. Kernel
+isaacgbalintay/flashmini-ultra-sft-v7 is the first run carrying this fix.
