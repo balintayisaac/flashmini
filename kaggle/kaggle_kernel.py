@@ -32,6 +32,7 @@ says so.
 
 from __future__ import annotations
 
+import json
 import os
 import time
 
@@ -83,9 +84,7 @@ def _resolve_traces_path() -> str:
         if hits:
             print(f"[ultra] traces found at {hits[0]}")
             return hits[0]
-    raise FileNotFoundError(
-        "flashmini_traces.jsonl not found under /kaggle/input/** or /content"
-    )
+    raise FileNotFoundError("flashmini_traces.jsonl not found under /kaggle/input/** or /content")
 
 
 # TRACES_PATH is resolved lazily inside load_mix(): resolving at import time
@@ -137,14 +136,14 @@ def load_mix() -> Dataset:  # noqa: F821
         for row in stream:
             if len(kept) >= n:
                 break
-            msgs = row.get("messages")
-            if not _valid_messages(msgs):
+            clean = _clean_messages(row.get("messages"))
+            if clean is None:
                 continue
             try:
-                tok.apply_chat_template(msgs, tokenize=False)
+                tok.apply_chat_template(clean, tokenize=False)
             except Exception:
                 continue  # template-incompatible row: skip, count later
-            kept.append({"messages": msgs})
+            kept.append({"messages": clean})
         if kept:
             parts.append(Dataset.from_list(kept))
 
@@ -152,18 +151,69 @@ def load_mix() -> Dataset:  # noqa: F821
     return blended
 
 
-def _valid_messages(msgs: object) -> bool:
-    """True iff msgs is a non-empty list of dicts each carrying a role.
+def _clean_message(m: object) -> dict | None:
+    """Normalize one chat message to {role, content, tool_calls}, or None.
 
-    UltraData rows with string messages pass apply_chat_template (a bare
-    string = single user turn) and poison Dataset.from_list with a mixed
-    list/non-list column (v5 ArrowInvalid), so type-check first.
+    Uniform by construction: content is always a string; tool_calls is
+    None or a list of {type, function: {name, arguments(str)}} dicts.
+    Corpus rows type these subfields inconsistently (arguments as dict vs
+    str/list, extra keys like reasoning_content/loss), which crashed
+    Dataset.from_list with ArrowInvalid: cannot mix list and non-list,
+    non-null values in the v5/v6 kernels (both shapes reproduced locally).
     """
-    return (
-        isinstance(msgs, list)
-        and bool(msgs)
-        and all(isinstance(m, dict) and "role" in m for m in msgs)
-    )
+    if not isinstance(m, dict) or not isinstance(m.get("role"), str):
+        return None
+    content = m.get("content")
+    if isinstance(content, list):
+        # multimodal-style parts: keep only the text payloads
+        content = "".join(
+            p.get("text", "")
+            for p in content
+            if isinstance(p, dict) and isinstance(p.get("text"), str)
+        )
+    if content is None:
+        content = ""
+    if not isinstance(content, str):
+        return None
+    raw_tc = m.get("tool_calls")
+    tool_calls: list[dict] | None = None
+    if raw_tc not in (None, []):
+        if not isinstance(raw_tc, list):
+            return None
+        tool_calls = []
+        for item in raw_tc:
+            if not isinstance(item, dict):
+                return None
+            fn = item.get("function")
+            if not isinstance(fn, dict):
+                return None
+            name = fn.get("name")
+            if not isinstance(name, str) or not name:
+                return None
+            args = fn.get("arguments")
+            if isinstance(args, (dict, list)):
+                args = json.dumps(args, ensure_ascii=False, default=str)
+            elif args is None:
+                args = ""
+            elif not isinstance(args, str):
+                args = str(args)
+            tool_calls.append({"type": "function", "function": {"name": name, "arguments": args}})
+    if not content.strip() and not tool_calls:
+        return None  # nothing trainable in this turn
+    return {"role": m["role"], "content": content, "tool_calls": tool_calls}
+
+
+def _clean_messages(msgs: object) -> list[dict] | None:
+    """Canonicalize a whole chat row via _clean_message; None = skip row."""
+    if not isinstance(msgs, list) or not msgs:
+        return None
+    out: list[dict] = []
+    for m in msgs:
+        clean = _clean_message(m)
+        if clean is None:
+            return None
+        out.append(clean)
+    return out
 
 
 MIX_CACHE = "/kaggle/working/mix.jsonl"
