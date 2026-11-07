@@ -1,5 +1,5 @@
 {
-  "gate": "pytest",
+  "gate": "uv run pytest",
   "spec": "SPEC.md",
   "practice": "DOCTRINE.md",
   "worktrees": "inside",
