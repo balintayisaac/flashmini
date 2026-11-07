@@ -111,8 +111,15 @@ def train(blended: "Dataset") -> None:  # noqa: F821
         r=16,
         lora_alpha=32,
         lora_dropout=0.05,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                        "gate_proj", "up_proj", "down_proj"],
+        target_modules=[
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
+        ],
         task_type="CAUSAL_LM",
     )
     from transformers import AutoTokenizer
@@ -196,27 +203,39 @@ def gguf_and_push(model_dir: str, repo: str) -> None:
 
     if not Path("llama.cpp").exists():
         subprocess.run(
-            ["git", "clone", "--depth", "1",
-             "https://github.com/ggml-org/llama.cpp"],
+            ["git", "clone", "--depth", "1", "https://github.com/ggml-org/llama.cpp"],
             check=True,
         )
     f16 = "/kaggle/working/flashmini-ultra-f16.gguf"
     subprocess.run(
-        ["python", "llama.cpp/convert_hf_to_gguf.py", "--outtype", "f16",
-         "--outfile", f16, "--mtp", model_dir],
+        [
+            "python",
+            "llama.cpp/convert_hf_to_gguf.py",
+            "--outtype",
+            "f16",
+            "--outfile",
+            f16,
+            "--mtp",
+            model_dir,
+        ],
         check=True,
     )
-    produced = (
-        f16 if Path(f16).exists()
-        else next(Path("/kaggle/working").glob("*f16*.gguf"))
+    produced = f16 if Path(f16).exists() else next(Path("/kaggle/working").glob("*f16*.gguf"))
+    subprocess.run(
+        [
+            "cmake",
+            "-S",
+            "llama.cpp",
+            "-B",
+            "llama.cpp/build",
+            "-DGGML_CUDA=OFF",
+            "-DCMAKE_BUILD_TYPE=Release",
+        ],
+        check=True,
     )
     subprocess.run(
-        ["cmake", "-S", "llama.cpp", "-B", "llama.cpp/build",
-         "-DGGML_CUDA=OFF", "-DCMAKE_BUILD_TYPE=Release"], check=True,
-    )
-    subprocess.run(
-        ["cmake", "--build", "llama.cpp/build", "--target", "llama-quantize",
-         "-j", "4"], check=True,
+        ["cmake", "--build", "llama.cpp/build", "--target", "llama-quantize", "-j", "4"],
+        check=True,
     )
     q4 = "/kaggle/working/flashmini-ultra-q4km.gguf"
     subprocess.run(

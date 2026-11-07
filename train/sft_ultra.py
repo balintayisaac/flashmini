@@ -58,10 +58,7 @@ def main() -> None:
     template = AutoTokenizer.from_pretrained(BASE_MODEL).chat_template or ""
     assistant_only = "{% generation %}" in template
     if not assistant_only:
-        print(
-            "chat template lacks {% generation %} markers "
-            "-> training with full-sequence loss"
-        )
+        print("chat template lacks {% generation %} markers -> training with full-sequence loss")
 
     trainer = SFTTrainer(
         model=BASE_MODEL,
