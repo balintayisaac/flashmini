@@ -1,0 +1,3 @@
+[mcp_servers.pullboard]
+command = "sh"
+args = ["-c", "m=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/..; for p in node_modules/.bin/pullboard \"$m/node_modules/.bin/pullboard\"; do [ -x \"$p\" ] && exec \"$p\" mcp; done; command -v pullboard >/dev/null && exec pullboard mcp; echo \"pullboard is not installed; npm i -D pullboard\" >&2; exit 1"]

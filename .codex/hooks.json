@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "m=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/..; for p in node_modules/.bin/pullboard \"$m/node_modules/.bin/pullboard\"; do [ -x \"$p\" ] && exec \"$p\" hook SessionStart; done; command -v pullboard >/dev/null || exit 0; exec pullboard hook SessionStart",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "m=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/..; for p in node_modules/.bin/pullboard \"$m/node_modules/.bin/pullboard\"; do [ -x \"$p\" ] && exec \"$p\" hook Stop; done; command -v pullboard >/dev/null || exit 0; exec pullboard hook Stop",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

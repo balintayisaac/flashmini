@@ -1,0 +1,30 @@
+{
+  "gate": "pytest",
+  "spec": "SPEC.md",
+  "practice": "DOCTRINE.md",
+  "worktrees": "inside",
+  "verify": {
+    "policy": "any",
+    "family": "off"
+  },
+  "agents": {
+    "names": "suffix"
+  },
+  "lease": "2h",
+  "lanes": {
+    "review": {
+      "owns": [],
+      "starts": "any time: verifiers check submitted work and own no folders"
+    }
+  },
+  "shared": [],
+  "commits": {
+    "requireIds": [
+      "feat",
+      "fix"
+    ]
+  },
+  "checks": {
+    "provesNothing": "hold"
+  }
+}
